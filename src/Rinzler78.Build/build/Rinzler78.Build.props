@@ -1,0 +1,39 @@
+<Project>
+
+  <!-- Imported before the consuming project's own properties, so everything here
+       can be overridden by the project that imports it. -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors></WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <!-- Documentation is part of the public surface: an undocumented public member
+       is an error, not a warning. -->
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Reproducibility. ContinuousIntegrationBuild is set by the workflow, never
+       here, so that a local build stays debuggable. -->
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- Per-project contracts. Every project declares its own; the values here are
+       the defaults for a project that declares nothing. -->
+  <PropertyGroup>
+    <HereTrimContract Condition="'$(HereTrimContract)' == ''">OutOfScope</HereTrimContract>
+    <HereCoverageContract Condition="'$(HereCoverageContract)' == ''">Enforced</HereCoverageContract>
+  </PropertyGroup>
+
+</Project>

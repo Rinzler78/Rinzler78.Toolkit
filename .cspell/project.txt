@@ -1,0 +1,35 @@
+# Git and tooling vocabulary
+gitlink
+superproject
+worktree
+worktrees
+shellcheck
+shfmt
+pipx
+nupkg
+snupkg
+nuget
+openspec
+Renovate
+# Ecosystem vocabulary
+Rinzler
+maccatalyst
+monoandroid
+netstandard
+xcframework
+Xamarin
+xharness
+# Agent vocabulary
+HITL
+# Shell and tooling tokens
+Eeuo
+pipefail
+nologo
+NOLOGO
+OPTOUT
+fromdateiso
+# Proper nouns
+Leclere
+# MSBuild vocabulary
+Trimmable
+Aot

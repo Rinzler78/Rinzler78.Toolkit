@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- A props/targets package. It produces no assembly: the payload is the two
+       MSBuild files under build/, auto-imported on restore through
+       {project}.nuget.g.props, so the same semantics apply under F5 in an IDE and
+       in continuous integration. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <IsPackable>true</IsPackable>
+    <PackageId>Rinzler78.Build</PackageId>
+    <Description>Shared build semantics for the Here.Sdk ecosystem: target framework sets, analysers, deterministic build, SourceLink, symbols, documentation, trimming and coverage contracts. Not affiliated with, endorsed by, or supported by HERE Technologies.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="build/Rinzler78.Build.props" Pack="true" PackagePath="build/" />
+    <None Include="build/Rinzler78.Build.targets" Pack="true" PackagePath="build/" />
+    <None Include="build/Rinzler78.Build.props" Pack="true" PackagePath="buildMultiTargeting/" />
+    <None Include="build/Rinzler78.Build.targets" Pack="true" PackagePath="buildMultiTargeting/" />
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+</Project>

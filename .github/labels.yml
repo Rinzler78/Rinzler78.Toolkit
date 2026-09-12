@@ -1,0 +1,15 @@
+# The thirteen labels of the ecosystem. Applied by `gh label` from this file, so
+# that eighteen repositories cannot drift apart.
+- {name: needs-triage,    color: 'd4c5f9', description: 'Not yet qualified'}
+- {name: needs-info,      color: 'fef2c0', description: 'Waiting on the reporter'}
+- {name: ready-for-agent, color: '0e8a16', description: 'Qualified, an agent can start'}
+- {name: ready-for-human, color: '1d76db', description: 'Needs a human decision'}
+- {name: bug,             color: 'd73a4a', description: 'Behaviour differs from the specification'}
+- {name: feature,         color: 'a2eeef', description: 'New capability'}
+- {name: chore,           color: 'ededed', description: 'Maintenance, no behaviour change'}
+- {name: docs,            color: '0075ca', description: 'Documentation only'}
+- {name: dependencies,    color: '0366d6', description: 'Dependency update'}
+- {name: breaking-change, color: 'b60205', description: 'Removes or reshapes a public member'}
+- {name: security,        color: 'b60205', description: 'Security impact'}
+- {name: blocked,         color: '000000', description: 'Waiting on something outside this repository'}
+- {name: wontfix,         color: 'ffffff', description: 'Closed deliberately'}

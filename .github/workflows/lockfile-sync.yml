@@ -1,0 +1,39 @@
+name: lockfile-sync
+
+# Renovate raises a version in Directory.Packages.props but does not regenerate
+# packages.lock.json, which breaks --locked-mode. The repository regenerates its own
+# lock file on the bot's branch rather than relaxing the restore.
+# Renovate's branches live in this repository, so `pull_request` is enough and the
+# workflow never runs with a write token against a fork's head.
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths: ['Directory.Packages.props']
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: >-
+      github.actor == 'renovate[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - run: dotnet restore --force-evaluate
+      - name: Commit the regenerated lock files
+        run: |
+          set -Eeuo pipefail
+          if [[ -n "$(git status --porcelain '**/packages.lock.json')" ]]; then
+            git config user.name  'lockfile-sync'
+            git config user.email 'lockfile-sync@users.noreply.github.com'
+            git add '**/packages.lock.json'
+            git commit -m 'chore: regenerate lock files after dependency bump'
+            git push
+          fi

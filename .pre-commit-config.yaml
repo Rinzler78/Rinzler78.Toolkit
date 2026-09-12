@@ -1,0 +1,71 @@
+# Four blocking checks per language: vulnerability scan, dependency freshness,
+# linter, and spelling. No opt-out, no skip list. A blocked commit names a root
+# cause to fix, never a reason to bypass.
+default_install_hook_types: [pre-commit, pre-push]
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        # -x follows sourced files: without it every script reports SC1091, and
+        # _common.sh reports its own exports as unused.
+        args: [-x]
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.12.0-2
+    hooks:
+      - id: shfmt
+        # -w writes: a formatter that only diffs never converges and fails forever.
+        args: [-i, "2", -ci, -w]
+
+  - repo: local
+    hooks:
+      - id: cspell
+        name: spelling (cspell, language en)
+        entry: cspell lint --no-progress --no-summary --gitignore
+        language: system
+        pass_filenames: true
+        stages: [pre-commit]
+
+      - id: dotnet-format
+        name: C# formatting and analysers
+        entry: bash -c 'dotnet format --verify-no-changes --verbosity minimal'
+        language: system
+        pass_filenames: false
+        files: \.(cs|csproj|props|targets|sln)$
+        stages: [pre-commit]
+
+      - id: entry-points-agree
+        name: CLAUDE.md and AGENTS.md agree
+        entry: scripts/hooks/entry-points-agree.sh
+        language: system
+        pass_filenames: false
+        files: ^(CLAUDE|AGENTS)\.md$
+        stages: [pre-commit]
+
+      - id: dotnet-vulnerable
+        name: C# vulnerability scan
+        entry: scripts/hooks/no-vulnerable-packages.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: dotnet-outdated
+        name: C# dependency freshness
+        entry: scripts/hooks/no-stale-packages.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

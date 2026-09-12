@@ -1,0 +1,21 @@
+name: Bug
+description: Something behaves differently from what the specification requires
+labels: [bug, needs-triage]
+body:
+  - type: textarea
+    id: expected
+    attributes:
+      label: What the specification requires
+      description: Quote the requirement, or say that none covers this yet.
+    validations: {required: true}
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happens instead
+    validations: {required: true}
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Smallest reproduction
+      description: Commands, target framework, and the exact output.
+    validations: {required: true}

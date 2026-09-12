@@ -1,0 +1,63 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [develop, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Toolchain check
+        run: ./scripts/setup-env.sh --check
+
+      - name: Entry points agree
+        run: ./scripts/hooks/entry-points-agree.sh
+
+      - name: Restore, locked
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        run: ./scripts/build.sh
+        env:
+          CONFIGURATION: Release
+
+      - name: Test
+        run: ./scripts/test.sh
+        env:
+          CONFIGURATION: Release
+
+      - name: Build contracts are enforced
+        run: ./scripts/hooks/build-contracts-enforced.sh
+
+      - name: Harness regenerates byte-identically
+        run: ./scripts/hooks/harness-regenerates.sh
+
+      - name: Vulnerability scan
+        run: ./scripts/hooks/no-vulnerable-packages.sh
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pipx install pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure

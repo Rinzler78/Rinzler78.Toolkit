@@ -1,0 +1,37 @@
+<Project>
+
+  <!-- Imported after the consuming project, so these rules see its final values
+       and can refuse a combination the project set. -->
+
+  <!-- Trimming and ahead-of-time compatibility require net6.0 or later. Declaring
+       them on netstandard2.0 produces a project that cannot build, so the contract is
+       applied through a framework test rather than a raw string comparison. -->
+  <PropertyGroup Condition="'$(HereTrimContract)' == 'Trimmable' AND
+                            $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(HereTrimContract)' == 'AotCompatible' AND
+                            $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <Target Name="HereValidateContracts" BeforeTargets="Build">
+    <Error Condition="'$(HereTrimContract)' != 'OutOfScope' AND
+                      '$(HereTrimContract)' != 'Trimmable' AND
+                      '$(HereTrimContract)' != 'AotCompatible'"
+           Text="HereTrimContract must be OutOfScope, Trimmable or AotCompatible; found '$(HereTrimContract)'." />
+    <Error Condition="'$(HereCoverageContract)' != 'Enforced' AND
+                      '$(HereCoverageContract)' != 'Reduced' AND
+                      '$(HereCoverageContract)' != 'Exempt'"
+           Text="HereCoverageContract must be Enforced, Reduced or Exempt; found '$(HereCoverageContract)'." />
+  </Target>
+
+  <!-- Every package states its non-affiliation. A missing statement fails the
+       pack, because it is a trademark question, not a formality. -->
+  <Target Name="HereRequireNonAffiliation" BeforeTargets="GenerateNuspec"
+          Condition="'$(IsPackable)' == 'true'">
+    <Error Condition="!$(Description.Contains('Not affiliated with'))"
+           Text="The package description must state that it is not affiliated with HERE Technologies." />
+  </Target>
+
+</Project>
