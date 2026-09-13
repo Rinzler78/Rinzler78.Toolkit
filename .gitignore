@@ -6,3 +6,6 @@ artifacts/
 .DS_Store
 *.user
 .worktrees/
+
+# Generated code index and its AST cache — rebuilt on demand, never reviewed.
+graphify-out/

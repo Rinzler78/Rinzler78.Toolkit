@@ -26,12 +26,104 @@
            Text="HereCoverageContract must be Enforced, Reduced or Exempt; found '$(HereCoverageContract)'." />
   </Target>
 
+  <!-- The analysers a layer needs are declared by the consuming repository, in its
+       Directory.Packages.props as GlobalPackageReference, because central package
+       management owns versions and a props/targets package must not inject one.
+       What this file can do — and must — is refuse to build when an analyser the
+       layer depends on is absent, so that the guarantee is not silently optional. -->
+  <!-- MSBuild evaluates file-level properties before items, so a property that
+       reads @(PackageReference) at this scope is always empty. The list is built
+       inside the targets, where items exist. -->
+
+  <!-- IsPackable is set by the SDK targets, which are imported after this file.
+       Reading it at file scope silently yields an empty value, and a rule
+       conditioned on an empty value is a rule that never fires. Both the analyser
+       list and IsPackable are therefore resolved inside a target. -->
+  <Target Name="HereCollectFacts">
+    <PropertyGroup>
+      <_HereAnalysers>;@(PackageReference->'%(Identity)');@(GlobalPackageReference->'%(Identity)');</_HereAnalysers>
+      <_HereShipsPublicSurface>false</_HereShipsPublicSurface>
+      <_HereShipsPublicSurface Condition="'$(IsPackable)' == 'true' and
+                                          '$(HereLayer)' != 'Unassigned' and
+                                          '$(HereLayer)' != 'Toolchain' and
+                                          '$(HereLayer)' != 'Sample' and
+                                          '$(HereLayer)' != 'Test'">true</_HereShipsPublicSurface>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="HereRequirePublicApiAnalyser" BeforeTargets="Build"
+          DependsOnTargets="HereCollectFacts"
+          Condition="'$(_HereShipsPublicSurface)' == 'true' or '$(IsPackable)' == 'true'">
+    <Error Condition="'$(_HereShipsPublicSurface)' == 'true' and !$(_HereAnalysers.Contains(';Microsoft.CodeAnalysis.PublicApiAnalyzers;'))"
+           Text="A package that ships a public surface must reference Microsoft.CodeAnalysis.PublicApiAnalyzers and commit PublicAPI.Shipped.txt and PublicAPI.Unshipped.txt. The surface diff is what decides the published version." />
+  </Target>
+
+  <Target Name="HereRequireBannedApiAnalyser" BeforeTargets="Build"
+          DependsOnTargets="HereCollectFacts"
+          Condition="'$(HereLayer)' == 'Contracts' or '$(HereLayer)' == 'PortableServices'">
+    <Error Condition="!$(_HereAnalysers.Contains(';Microsoft.CodeAnalysis.BannedApiAnalyzers;'))"
+           Text="An inward layer must reference Microsoft.CodeAnalysis.BannedApiAnalyzers: the dependency rule catches declared dependencies, the banned-symbol list catches the call site." />
+  </Target>
+
   <!-- Every package states its non-affiliation. A missing statement fails the
        pack, because it is a trademark question, not a formality. -->
   <Target Name="HereRequireNonAffiliation" BeforeTargets="GenerateNuspec"
           Condition="'$(IsPackable)' == 'true'">
     <Error Condition="!$(Description.Contains('Not affiliated with'))"
            Text="The package description must state that it is not affiliated with HERE Technologies." />
+  </Target>
+
+  <!-- The dependency rule, enforced rather than reviewed.
+
+       It inspects the dependencies the project *chose* — its PackageReference and
+       ProjectReference items — not the resolved reference set. On a modern target
+       framework the shared framework already carries System.Net.Http and friends,
+       so forbidding resolved references would fail every project for owning a BCL
+       it did not ask for. A dependency is something declared.
+
+       Usage-level enforcement is a separate mechanism: the template supplies
+       Microsoft.CodeAnalysis.BannedApiAnalyzers with a BannedSymbols.txt, which
+       fails on the *call site* rather than on the reference. This target checks
+       that the analyser is present for the layers that need it, below. -->
+  <ItemGroup Condition="'$(HereLayer)' == 'Contracts' or '$(HereLayer)' == 'PortableServices'">
+    <HereForbiddenDependency Include="Microsoft.Extensions.Http" />
+    <HereForbiddenDependency Include="Microsoft.AspNetCore.Components" />
+    <HereForbiddenDependency Include="Microsoft.AspNetCore.Components.Web" />
+    <HereForbiddenDependency Include="Microsoft.Maui.Controls" />
+    <HereForbiddenDependency Include="Xamarin.Forms" />
+    <HereForbiddenDependency Include="Microsoft.JSInterop" />
+  </ItemGroup>
+
+  <!-- Contracts sit further in than portable services: they carry no
+       implementation, so they may not reach a container or a logging
+       implementation either. -->
+  <ItemGroup Condition="'$(HereLayer)' == 'Contracts'">
+    <HereForbiddenDependency Include="Microsoft.Extensions.DependencyInjection" />
+    <HereForbiddenDependency Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <Target Name="HereEnforceDependencyRule" BeforeTargets="CoreCompile"
+          Condition="'$(HereLayer)' != 'Unassigned' and '$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_HereForbidden>;@(HereForbiddenDependency);</_HereForbidden>
+    </PropertyGroup>
+    <Error Condition="'$(_HereForbidden)' != ';;' and $(_HereForbidden.Contains(';%(PackageReference.Identity);'))"
+           Text="Dependency rule: a project in layer '$(HereLayer)' may not depend on '%(PackageReference.Identity)'. Source dependencies point inward only." />
+  </Target>
+
+  <!-- A packable project with no declared layer cannot be checked, and an
+       unchecked package is how the rule quietly stops applying. -->
+  <Target Name="HereRequireLayer" BeforeTargets="Build" DependsOnTargets="HereCollectFacts"
+          Condition="'$(IsPackable)' == 'true' and '$(HereLayer)' == 'Unassigned'">
+    <Error Text="A packable project must declare HereLayer so the dependency rule can be checked. Accepted: $(HereKnownLayers)." />
+  </Target>
+
+  <!-- A typo in HereLayer would silently disable the dependency rule, because no
+       forbidden set would match. The value is therefore checked against the map. -->
+  <Target Name="HereValidateLayer" BeforeTargets="Build"
+          Condition="'$(HereLayer)' != 'Unassigned'">
+    <Error Condition="!$(HereKnownLayers.Contains(';$(HereLayer);'))"
+           Text="HereLayer '$(HereLayer)' is not one of $(HereKnownLayers)." />
   </Target>
 
 </Project>

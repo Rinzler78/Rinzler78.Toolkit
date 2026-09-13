@@ -33,3 +33,5 @@ Leclere
 # MSBuild vocabulary
 Trimmable
 Aot
+xamarinios
+graphify

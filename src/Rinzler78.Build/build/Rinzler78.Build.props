@@ -29,6 +29,31 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
+  <!-- Which of the eight layers this project sits in. The dependency rule is
+       checked against it after compilation. `Unassigned` is refused for a packable
+       project: a package with no layer cannot be checked. -->
+  <PropertyGroup>
+    <HereLayer Condition="'$(HereLayer)' == ''">Unassigned</HereLayer>
+    <HereKnownLayers>;Binding;Wrapper;Contracts;PortableServices;Presentation;StandardisationAdapter;Facade;CrossPlatformHead;Toolchain;Sample;Test;</HereKnownLayers>
+  </PropertyGroup>
+
+  <!-- Target framework sets, named once so that eighteen repositories cannot
+       disagree about what "portable" means. -->
+  <PropertyGroup>
+    <HerePortableTargetFrameworks>netstandard2.0;net8.0;net9.0;net10.0</HerePortableTargetFrameworks>
+    <HereModernTargetFrameworks>net8.0;net9.0;net10.0</HereModernTargetFrameworks>
+    <HereAppleTargetFrameworks>net8.0-ios;net9.0-ios;net10.0-ios</HereAppleTargetFrameworks>
+    <HereAndroidTargetFrameworks>net8.0-android;net9.0-android;net10.0-android</HereAndroidTargetFrameworks>
+    <HereXamarinTargetFrameworks>monoandroid12.0;xamarinios10</HereXamarinTargetFrameworks>
+  </PropertyGroup>
+
+  <!-- Reproducibility is a property of the build machine, not of the source, so
+       ContinuousIntegrationBuild follows the environment rather than being pinned
+       here: a local build stays debuggable. -->
+  <PropertyGroup Condition="'$(CI)' == 'true' or '$(TF_BUILD)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
   <!-- Per-project contracts. Every project declares its own; the values here are
        the defaults for a project that declares nothing. -->
   <PropertyGroup>

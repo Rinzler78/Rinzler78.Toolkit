@@ -11,6 +11,7 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <DevelopmentDependency>true</DevelopmentDependency>
     <IsPackable>true</IsPackable>
+    <HereLayer>Toolchain</HereLayer>
     <PackageId>Rinzler78.Build</PackageId>
     <Description>Shared build semantics for the Here.Sdk ecosystem: target framework sets, analysers, deterministic build, SourceLink, symbols, documentation, trimming and coverage contracts. Not affiliated with, endorsed by, or supported by HERE Technologies.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
