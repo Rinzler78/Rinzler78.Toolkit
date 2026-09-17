@@ -65,12 +65,12 @@ repos:
         files: ^(CLAUDE|AGENTS)\.md$
         stages: [pre-commit]
 
-      - id: readme-is-true
-        name: README agrees with the repository
-        entry: scripts/hooks/readme-is-true.sh
+      - id: docs-are-true
+        name: documents agree with the repository
+        entry: scripts/hooks/docs-are-true.sh
         language: system
         pass_filenames: false
-        files: ^(README\.md|scripts/.*\.sh)$
+        files: ^(README\.md|CLAUDE\.md|AGENTS\.md|scripts/.*\.sh)$
         stages: [pre-commit]
 
       - id: dotnet-vulnerable

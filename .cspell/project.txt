@@ -36,3 +36,8 @@ Aot
 xamarinios
 graphify
 docfx
+# POSIX and tooling tokens
+getconf
+NPROCESSORS
+ONLN
+msbuild

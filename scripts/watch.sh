@@ -17,9 +17,17 @@ fi
 
 [[ -n "$target" ]] || fail 'no project to watch; pass one as the first argument'
 
-if grep -q '<OutputType>Exe</OutputType>' "$target"; then
-  run dotnet watch --project "$target" run
-else
-  log "no runnable project: watching the build of $(basename "$target")"
-  run dotnet watch --project "$target" build
-fi
+# The effective output type, not the literal text: a project can be runnable through
+# WinExe, or inherit Exe from its SDK without ever spelling it out, and a raw grep
+# sends both down the build branch where watch never launches anything.
+output_type=$(dotnet msbuild "$target" -getProperty:OutputType -nologo 2>/dev/null | tr -d '[:space:]')
+
+case "$output_type" in
+  Exe | WinExe)
+    run dotnet watch --project "$target" run
+    ;;
+  *)
+    log "not a runnable project (OutputType=${output_type:-unset}): watching its build"
+    run dotnet watch --project "$target" build
+    ;;
+esac

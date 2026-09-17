@@ -43,21 +43,20 @@ are parameters, not actions: a variant script is a second build semantics that
 continuous integration never exercises, which is how "it works on my machine" is
 manufactured. `dotnet build` is already incremental.
 
-### What the measurements said
+### On measuring
 
-`scripts/bench.sh` on this repository, three runs each:
+`scripts/bench.sh` times three points — a build with nothing changed, the same
+without restore, and one with a project file touched — because they answer three
+different questions, and optimising without knowing which one hurts is guessing.
 
-| | |
-|---|---|
-| build, nothing changed | ~6.9 s |
-| the same without restore | ~5.8 s |
-| static graph restore enabled | 6.09–7.62 s |
-| static graph restore disabled | 6.62–7.21 s |
+It records the load average with the numbers and **refuses to measure a busy
+machine**: a build time taken under unrelated load says more about the machine than
+about the build, and a figure nobody can trust is worse than no figure, because it
+gets quoted. `FORCE=1` records anyway, and the result should not be quoted.
 
-Roughly a second of a no-op build is restore evaluation, and static graph evaluation
-made no measurable difference — its ranges overlap. So nothing was optimised, and no
-property was added on the strength of an intuition. The numbers are re-measurable by
-running the verb.
+No build property has been added on performance grounds. Static graph restore was
+tried and removed: its ranges overlapped with the baseline, and a property that
+changes restore semantics for no measured gain is cargo cult.
 
 ## Design notes
 

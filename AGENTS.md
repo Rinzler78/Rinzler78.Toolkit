@@ -39,10 +39,16 @@ It belongs to no domain. `Here.Sdk` is its first consumer, not its subject.
 
 Every repository in the ecosystem exposes the same verbs at the same place:
 
-    scripts/setup-env.sh [--check]   scripts/build.sh     scripts/test.sh
-    scripts/run.sh                   scripts/package.sh   scripts/lint.sh
-    scripts/format.sh                scripts/coverage.sh  scripts/e2e.sh
-    scripts/clean.sh                 scripts/publish.sh
+    scripts/setup-env.sh [--check]   scripts/restore.sh   scripts/build.sh
+    scripts/test.sh                  scripts/coverage.sh  scripts/watch.sh
+    scripts/run.sh                   scripts/deploy.sh    scripts/package.sh
+    scripts/publish.sh               scripts/docs.sh      scripts/lint.sh
+    scripts/format.sh                scripts/e2e.sh       scripts/bench.sh
+    scripts/clean.sh
+
+Speed and configuration are parameters, not verbs: `CONFIGURATION=Release` selects
+the configuration, and there is deliberately no `fast-build`. A variant script is a
+second build semantics that continuous integration never exercises.
 
 `--check` is non-mutating and is a continuous integration gate.
 

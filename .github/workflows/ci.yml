@@ -37,8 +37,8 @@ jobs:
       - name: Toolchain check
         run: ./scripts/setup-env.sh --check
 
-      - name: README agrees with the repository
-        run: ./scripts/hooks/readme-is-true.sh
+      - name: Documents agree with the repository
+        run: ./scripts/hooks/docs-are-true.sh
 
       - name: Entry points agree
         run: ./scripts/hooks/entry-points-agree.sh

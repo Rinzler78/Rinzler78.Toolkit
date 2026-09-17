@@ -45,6 +45,7 @@ if ((missing > 0)); then
   log 'installing the declared toolchain'
   command -v mise >/dev/null 2>&1 || fail 'install mise first, then re-run'
   run mise install
+  run dotnet tool restore
   run pre-commit install --install-hooks
   run pre-commit install --hook-type pre-push
 else
