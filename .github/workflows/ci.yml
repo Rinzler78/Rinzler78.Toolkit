@@ -24,8 +24,21 @@ jobs:
         with:
           global-json-file: global.json
 
+      # setup-env --check is a gate, so the runner must carry what it checks:
+      # asserting the presence of a tool the workflow never installs turns the
+      # gate into a guaranteed failure.
+      - uses: jdx/mise-action@v2
+
+      # setup-env --check asserts the declared toolchain, and pre-commit is part of
+      # it. A job that checks for a tool it never installs fails on the check rather
+      # than on the code.
+      - run: pipx install pre-commit
+
       - name: Toolchain check
         run: ./scripts/setup-env.sh --check
+
+      - name: README agrees with the repository
+        run: ./scripts/hooks/readme-is-true.sh
 
       - name: Entry points agree
         run: ./scripts/hooks/entry-points-agree.sh

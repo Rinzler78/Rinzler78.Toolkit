@@ -4,34 +4,96 @@
        and can refuse a combination the project set. -->
 
   <!-- Trimming and ahead-of-time compatibility require net6.0 or later. Declaring
-       them on netstandard2.0 produces a project that cannot build, so the contract is
-       applied through a framework test rather than a raw string comparison. -->
-  <PropertyGroup Condition="'$(HereTrimContract)' == 'Trimmable' AND
+       them on netstandard2.0 produces a project that cannot build, so the contract
+       is applied through a framework test rather than a string comparison. -->
+  <PropertyGroup Condition="'$(RinzlerTrimContract)' == 'Trimmable' AND
                             $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(HereTrimContract)' == 'AotCompatible' AND
+  <PropertyGroup Condition="'$(RinzlerTrimContract)' == 'AotCompatible' AND
                             $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
-  <Target Name="HereValidateContracts" BeforeTargets="Build">
-    <Error Condition="'$(HereTrimContract)' != 'OutOfScope' AND
-                      '$(HereTrimContract)' != 'Trimmable' AND
-                      '$(HereTrimContract)' != 'AotCompatible'"
-           Text="HereTrimContract must be OutOfScope, Trimmable or AotCompatible; found '$(HereTrimContract)'." />
-    <Error Condition="'$(HereCoverageContract)' != 'Enforced' AND
-                      '$(HereCoverageContract)' != 'Reduced' AND
-                      '$(HereCoverageContract)' != 'Exempt'"
-           Text="HereCoverageContract must be Enforced, Reduced or Exempt; found '$(HereCoverageContract)'." />
+  <Target Name="RinzlerValidateContracts" BeforeTargets="Build">
+    <Error Condition="'$(RinzlerTrimContract)' != 'OutOfScope' AND
+                      '$(RinzlerTrimContract)' != 'Trimmable' AND
+                      '$(RinzlerTrimContract)' != 'AotCompatible'"
+           Text="RinzlerTrimContract must be OutOfScope, Trimmable or AotCompatible; found '$(RinzlerTrimContract)'." />
+    <Error Condition="'$(RinzlerCoverageContract)' != 'Enforced' AND
+                      '$(RinzlerCoverageContract)' != 'Reduced' AND
+                      '$(RinzlerCoverageContract)' != 'Exempt'"
+           Text="RinzlerCoverageContract must be Enforced, Reduced or Exempt; found '$(RinzlerCoverageContract)'." />
   </Target>
 
-  <!-- Every package states its non-affiliation. A missing statement fails the
-       pack, because it is a trademark question, not a formality. -->
-  <Target Name="HereRequireNonAffiliation" BeforeTargets="GenerateNuspec"
-          Condition="'$(IsPackable)' == 'true'">
-    <Error Condition="!$(Description.Contains('Not affiliated with'))"
-           Text="The package description must state that it is not affiliated with HERE Technologies." />
+  <!-- MSBuild evaluates file-level properties before items, so a property reading
+       @(PackageReference) at that scope is always empty. IsPackable is set by the
+       SDK targets, imported after this file, so a rule conditioned on it at file
+       scope silently never fires. Both facts are therefore resolved inside a
+       target, where they exist. -->
+  <Target Name="RinzlerCollectFacts">
+    <PropertyGroup>
+      <_RinzlerAnalysers>;@(PackageReference->'%(Identity)');@(GlobalPackageReference->'%(Identity)');</_RinzlerAnalysers>
+      <_RinzlerForbidden>;@(RinzlerForbiddenDependency);</_RinzlerForbidden>
+      <_RinzlerShipsPackage>false</_RinzlerShipsPackage>
+      <_RinzlerShipsPackage Condition="'$(IsPackable)' == 'true'">true</_RinzlerShipsPackage>
+    </PropertyGroup>
+  </Target>
+
+  <!-- The dependency rule, enforced rather than reviewed.
+
+       It inspects the dependencies the project *chose* — its PackageReference
+       items — not the resolved reference set. On a modern target framework the
+       shared framework already carries System.Net.Http and its neighbours, so
+       forbidding resolved references would fail every project for owning a base
+       class library it never asked for. A dependency is something declared.
+
+       What counts as outward is the consumer's to say: this file knows how to
+       refuse, not what to refuse. -->
+  <Target Name="RinzlerEnforceDependencyRule" BeforeTargets="CoreCompile"
+          DependsOnTargets="RinzlerCollectFacts"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <Error Condition="'$(_RinzlerForbidden)' != ';;' AND
+                      $(_RinzlerForbidden.Contains(';%(PackageReference.Identity);'))"
+           Text="Dependency rule: a project in layer '$(RinzlerLayer)' may not depend on '%(PackageReference.Identity)'. Source dependencies point inward only." />
+  </Target>
+
+  <!-- A layer name is only useful if it is checked: a typo would otherwise match no
+       forbidden set and silently disable the rule above. Validation applies only
+       when the consumer has declared a vocabulary. -->
+  <Target Name="RinzlerValidateLayer" BeforeTargets="Build"
+          Condition="'$(RinzlerKnownLayers)' != '' AND '$(RinzlerLayer)' != 'Unassigned'">
+    <Error Condition="!$(RinzlerKnownLayers.Contains(';$(RinzlerLayer);'))"
+           Text="RinzlerLayer '$(RinzlerLayer)' is not one of $(RinzlerKnownLayers)." />
+  </Target>
+
+  <Target Name="RinzlerRequireLayer" BeforeTargets="Build"
+          DependsOnTargets="RinzlerCollectFacts"
+          Condition="'$(RinzlerKnownLayers)' != '' AND '$(_RinzlerShipsPackage)' == 'true' AND
+                     '$(RinzlerLayer)' == 'Unassigned'">
+    <Error Text="A packable project must declare RinzlerLayer so the dependency rule can be checked. Accepted: $(RinzlerKnownLayers)." />
+  </Target>
+
+  <!-- Analysers a project depends on are declared by the consuming repository, in
+       central package management, because that is what owns versions. A
+       props/targets package must not inject a PackageReference — but it can refuse
+       to build when a required analyser is absent, so that the guarantee is not
+       silently optional. -->
+  <Target Name="RinzlerRequireAnalysers" BeforeTargets="Build"
+          DependsOnTargets="RinzlerCollectFacts"
+          Condition="'@(RinzlerRequiredAnalyzer)' != ''">
+    <Error Condition="!$(_RinzlerAnalysers.Contains(';%(RinzlerRequiredAnalyzer.Identity);'))"
+           Text="This project must reference %(RinzlerRequiredAnalyzer.Identity): %(RinzlerRequiredAnalyzer.Because)" />
+  </Target>
+
+  <!-- A required description fragment — a non-affiliation statement, a licence
+       note, an attribution — is a domain obligation, not a build one. The
+       mechanism lives here; the text lives with the domain that owes it. -->
+  <Target Name="RinzlerRequireDescription" BeforeTargets="GenerateNuspec"
+          DependsOnTargets="RinzlerCollectFacts"
+          Condition="'$(RinzlerRequiredDescription)' != '' AND '$(_RinzlerShipsPackage)' == 'true'">
+    <Error Condition="!$(Description.Contains('$(RinzlerRequiredDescription)'))"
+           Text="The package description must contain: $(RinzlerRequiredDescription)" />
   </Target>
 
 </Project>

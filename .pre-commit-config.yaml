@@ -10,6 +10,11 @@ repos:
     hooks:
       - id: check-yaml
       - id: check-json
+      - id: check-xml
+        # A malformed props or targets file breaks every consumer of the package,
+        # and the toolkit's own build would not have caught it before it imported
+        # its own output.
+        files: \.(props|targets|csproj|nuspec)$
       - id: check-merge-conflict
       - id: end-of-file-fixer
       - id: trailing-whitespace
@@ -36,7 +41,11 @@ repos:
       - id: cspell
         name: spelling (cspell, language en)
         entry: cspell lint --no-progress --no-summary --gitignore
-        language: system
+        # node, not system: a system hook depends on whatever happens to be
+        # installed, which is the opposite of a self-contained harness. It passed
+        # locally and failed on a clean runner with "Executable `cspell` not found".
+        language: node
+        additional_dependencies: ['cspell@9.2.1']
         pass_filenames: true
         stages: [pre-commit]
 
@@ -54,6 +63,14 @@ repos:
         language: system
         pass_filenames: false
         files: ^(CLAUDE|AGENTS)\.md$
+        stages: [pre-commit]
+
+      - id: readme-is-true
+        name: README agrees with the repository
+        entry: scripts/hooks/readme-is-true.sh
+        language: system
+        pass_filenames: false
+        files: ^(README\.md|scripts/.*\.sh)$
         stages: [pre-commit]
 
       - id: dotnet-vulnerable

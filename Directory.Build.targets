@@ -1,0 +1,5 @@
+<Project>
+
+  <Import Project="$(MSBuildThisFileDirectory)src/Rinzler78.Build/build/Rinzler78.Build.targets" />
+
+</Project>

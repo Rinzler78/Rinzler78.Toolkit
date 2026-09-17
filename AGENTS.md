@@ -4,16 +4,15 @@
 
 ## What this repository is
 
-The toolchain foundation of the `Here.Sdk.*` ecosystem. It publishes two packages
-and holds no ecosystem code:
+A domain-agnostic toolchain foundation. It publishes two packages and belongs to no
+ecosystem:
 
 | Package | What it is |
 |---|---|
-| `Rinzler78.Build` | A props/targets package, auto-imported on restore, carrying every build semantic: target framework sets, analysers, warnings as errors, deterministic build, SourceLink, symbols, XML documentation, trimming and coverage contracts, packaging metadata. |
+| `Rinzler78.Build` | A props/targets package, auto-imported on restore, carrying every build semantic: analysers, warnings as errors, deterministic build, SourceLink, symbols, XML documentation, and declarative contracts for trimming, coverage and architecture. |
 | `Rinzler78.Templates` | A `dotnet new` template pack — `rinzler-lib`, `rinzler-binding`, `rinzler-app` — each expanding a complete, self-contained agent harness. |
 
-It sits in **no layer** of the eight-layer architecture: it is a toolchain artefact,
-not an ecosystem package.
+It belongs to no domain. `Here.Sdk` is its first consumer, not its subject.
 
 ## Invariants
 
@@ -29,6 +28,12 @@ not an ecosystem package.
   committed. Nothing is fetched at run time.
 - **Specifications name libraries, not versions.** Concrete versions live in
   `Directory.Packages.props`.
+- **Mechanism here, policy there.** This package knows how to refuse, not what to
+  refuse. Layer vocabulary, forbidden dependencies, required analysers and any
+  mandatory description fragment are declared by the consuming repository. A
+  project that declares none of them builds: a toolkit that failed a project for
+  having no architecture would be unusable outside the one ecosystem it was
+  written for.
 
 ## Commands
 

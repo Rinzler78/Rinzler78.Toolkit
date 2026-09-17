@@ -11,8 +11,9 @@
     <NoDefaultExcludes>true</NoDefaultExcludes>
     <EnableDefaultItems>false</EnableDefaultItems>
     <IsPackable>true</IsPackable>
+    <RinzlerLayer>Toolchain</RinzlerLayer>
     <PackageId>Rinzler78.Templates</PackageId>
-    <Description>Project templates for the Here.Sdk ecosystem — rinzler-lib, rinzler-binding, rinzler-app — each expanding a complete, self-contained agent harness. Not affiliated with, endorsed by, or supported by HERE Technologies.</Description>
+    <Description>Project templates expanding a complete, self-contained agent harness: entry points, hooks, pre-commit configuration, toolchain manifests, workflows and a uniform script facade.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>

@@ -11,8 +11,9 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <DevelopmentDependency>true</DevelopmentDependency>
     <IsPackable>true</IsPackable>
+    <RinzlerLayer>Toolchain</RinzlerLayer>
     <PackageId>Rinzler78.Build</PackageId>
-    <Description>Shared build semantics for the Here.Sdk ecosystem: target framework sets, analysers, deterministic build, SourceLink, symbols, documentation, trimming and coverage contracts. Not affiliated with, endorsed by, or supported by HERE Technologies.</Description>
+    <Description>Shared build semantics: analysers, warnings as errors, deterministic build, SourceLink, symbols, documentation, and declarative contracts for trimming, coverage and architecture. Domain-agnostic: the mechanisms live here, the policy is declared by the consuming repository.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>

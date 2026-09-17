@@ -19,8 +19,8 @@
     <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
   </PropertyGroup>
 
-  <!-- Reproducibility. ContinuousIntegrationBuild is set by the workflow, never
-       here, so that a local build stays debuggable. -->
+  <!-- Reproducibility. ContinuousIntegrationBuild follows the environment rather
+       than being pinned here, so that a local build stays debuggable. -->
   <PropertyGroup>
     <Deterministic>true</Deterministic>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
@@ -28,12 +28,47 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(CI)' == 'true' or '$(TF_BUILD)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
 
-  <!-- Per-project contracts. Every project declares its own; the values here are
-       the defaults for a project that declares nothing. -->
+  <!-- Restore is locked. Without RestorePackagesWithLockFile there is no lock file
+       to compare against, and a locked restore succeeds while enforcing nothing —
+       a green check that checks nothing. -->
   <PropertyGroup>
-    <HereTrimContract Condition="'$(HereTrimContract)' == ''">OutOfScope</HereTrimContract>
-    <HereCoverageContract Condition="'$(HereCoverageContract)' == ''">Enforced</HereCoverageContract>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+  <!-- Named target framework sets, so that a solution cannot disagree with itself
+       about what "portable" or "modern" means. A consumer picks a set or ignores
+       them entirely. -->
+  <PropertyGroup>
+    <RinzlerPortableTargetFrameworks>netstandard2.0;net8.0;net9.0;net10.0</RinzlerPortableTargetFrameworks>
+    <RinzlerModernTargetFrameworks>net8.0;net9.0;net10.0</RinzlerModernTargetFrameworks>
+  </PropertyGroup>
+
+  <!-- Per-project contracts. Every project declares its own; these are the values
+       for a project that declares nothing. -->
+  <PropertyGroup>
+    <RinzlerTrimContract Condition="'$(RinzlerTrimContract)' == ''">OutOfScope</RinzlerTrimContract>
+    <RinzlerCoverageContract Condition="'$(RinzlerCoverageContract)' == ''">Enforced</RinzlerCoverageContract>
+  </PropertyGroup>
+
+  <!-- The architecture this package enforces is *declared by the consumer*, never
+       assumed here. This file supplies mechanisms; a domain supplies policy.
+
+       A consumer declares:
+         RinzlerKnownLayers            — ;-delimited list of accepted layer names
+         RinzlerLayer                  — the layer this project sits in
+         RinzlerForbiddenDependency    — package identities this layer may not take
+         RinzlerRequiredAnalyzer       — analysers this project must reference
+         RinzlerRequiredDescription    — a fragment every package description must carry
+
+       Declaring none of them disables the corresponding check rather than failing:
+       a build toolkit that refuses to build a project with no architecture would
+       be unusable outside the one ecosystem it was written for. -->
+  <PropertyGroup>
+    <RinzlerLayer Condition="'$(RinzlerLayer)' == ''">Unassigned</RinzlerLayer>
   </PropertyGroup>
 
 </Project>
