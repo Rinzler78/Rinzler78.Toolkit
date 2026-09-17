@@ -23,8 +23,41 @@ ecosystem is its first consumer, not its subject.
     ./scripts/test.sh
 
 Every repository in the ecosystem exposes the same verbs at the same place:
-`setup-env`, `build`, `test`, `run`, `package`, `lint`, `format`, `coverage`,
-`e2e`, `clean`, `publish`.
+
+| Verb | What it does |
+|---|---|
+| `setup-env` | Converges the machine to the declared toolchain; `--check` reports without mutating. |
+| `restore` | Locked in continuous integration, permissive locally. |
+| `build` `test` `coverage` | `CONFIGURATION=Release` selects the configuration; there is no separate release verb. |
+| `watch` | The fast inner loop: the same build, re-triggered on change. |
+| `run` `deploy` | Run locally, or deploy to an emulator, simulator or device. |
+| `package` `publish` | Pack, then push to nuget.org. |
+| `docs` | Build the API documentation site. |
+| `lint` `format` | The blocking checks, and the formatter that satisfies them. |
+| `e2e` | The end-to-end suite. |
+| `bench` | Measure the build, so that "fast" is a number. |
+| `clean` | Remove everything not tracked. |
+
+There is deliberately no `fast-build` and no `build-release`. Speed and configuration
+are parameters, not actions: a variant script is a second build semantics that
+continuous integration never exercises, which is how "it works on my machine" is
+manufactured. `dotnet build` is already incremental.
+
+### What the measurements said
+
+`scripts/bench.sh` on this repository, three runs each:
+
+| | |
+|---|---|
+| build, nothing changed | ~6.9 s |
+| the same without restore | ~5.8 s |
+| static graph restore enabled | 6.09–7.62 s |
+| static graph restore disabled | 6.62–7.21 s |
+
+Roughly a second of a no-op build is restore evaluation, and static graph evaluation
+made no measurable difference — its ranges overlap. So nothing was optimised, and no
+property was added on the strength of an intuition. The numbers are re-measurable by
+running the verb.
 
 ## Design notes
 

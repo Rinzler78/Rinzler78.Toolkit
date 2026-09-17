@@ -35,3 +35,4 @@ Trimmable
 Aot
 xamarinios
 graphify
+docfx
