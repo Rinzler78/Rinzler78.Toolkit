@@ -40,7 +40,7 @@ repos:
     hooks:
       - id: cspell
         name: spelling (cspell, language en)
-        entry: cspell lint --no-progress --no-summary --gitignore
+        entry: cspell lint --no-progress --no-summary
         # node, not system: a system hook depends on whatever happens to be
         # installed, which is the opposite of a self-contained harness. It passed
         # locally and failed on a clean runner with "Executable `cspell` not found".
@@ -65,12 +65,12 @@ repos:
         files: ^(CLAUDE|AGENTS)\.md$
         stages: [pre-commit]
 
-      - id: readme-is-true
-        name: README agrees with the repository
-        entry: scripts/hooks/readme-is-true.sh
+      - id: docs-are-true
+        name: documents agree with the repository
+        entry: scripts/hooks/docs-are-true.sh
         language: system
         pass_filenames: false
-        files: ^(README\.md|scripts/.*\.sh)$
+        files: ^(README\.md|CLAUDE\.md|AGENTS\.md|scripts/.*\.sh)$
         stages: [pre-commit]
 
       - id: dotnet-vulnerable

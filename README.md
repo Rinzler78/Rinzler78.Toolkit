@@ -23,8 +23,40 @@ ecosystem is its first consumer, not its subject.
     ./scripts/test.sh
 
 Every repository in the ecosystem exposes the same verbs at the same place:
-`setup-env`, `build`, `test`, `run`, `package`, `lint`, `format`, `coverage`,
-`e2e`, `clean`, `publish`.
+
+| Verb | What it does |
+|---|---|
+| `setup-env` | Converges the machine to the declared toolchain; `--check` reports without mutating. |
+| `restore` | Locked in continuous integration, permissive locally. |
+| `build` `test` `coverage` | `CONFIGURATION=Release` selects the configuration; there is no separate release verb. |
+| `watch` | The fast inner loop: the same build, re-triggered on change. |
+| `run` `deploy` | Run locally, or deploy to an emulator, simulator or device. |
+| `package` `publish` | Pack, then push to nuget.org. |
+| `docs` | Build the API documentation site. |
+| `lint` `format` | The blocking checks, and the formatter that satisfies them. |
+| `e2e` | The end-to-end suite. |
+| `bench` | Measure the build, so that "fast" is a number. |
+| `clean` | Remove everything not tracked. |
+
+There is deliberately no `fast-build` and no `build-release`. Speed and configuration
+are parameters, not actions: a variant script is a second build semantics that
+continuous integration never exercises, which is how "it works on my machine" is
+manufactured. `dotnet build` is already incremental.
+
+### On measuring
+
+`scripts/bench.sh` times three points — a build with nothing changed, the same
+without restore, and one with a project file touched — because they answer three
+different questions, and optimising without knowing which one hurts is guessing.
+
+It records the load average with the numbers and **refuses to measure a busy
+machine**: a build time taken under unrelated load says more about the machine than
+about the build, and a figure nobody can trust is worse than no figure, because it
+gets quoted. `FORCE=1` records anyway, and the result should not be quoted.
+
+No build property has been added on performance grounds. Static graph restore was
+tried and removed: its ranges overlapped with the baseline, and a property that
+changes restore semantics for no measured gain is cargo cult.
 
 ## Design notes
 
