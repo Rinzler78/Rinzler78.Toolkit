@@ -32,6 +32,13 @@
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
+  <!-- Restore is locked. Without RestorePackagesWithLockFile there is no lock file
+       to compare against, and a locked restore succeeds while enforcing nothing —
+       a green check that checks nothing. -->
+  <PropertyGroup>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
   <!-- Named target framework sets, so that a solution cannot disagree with itself
        about what "portable" or "modern" means. A consumer picks a set or ignores
        them entirely. -->

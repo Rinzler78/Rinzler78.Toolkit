@@ -24,6 +24,11 @@ jobs:
         with:
           global-json-file: global.json
 
+      # setup-env --check is a gate, so the runner must carry what it checks:
+      # asserting the presence of a tool the workflow never installs turns the
+      # gate into a guaranteed failure.
+      - uses: jdx/mise-action@v2
+
       - name: Toolchain check
         run: ./scripts/setup-env.sh --check
 

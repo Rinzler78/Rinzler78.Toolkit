@@ -1,0 +1,14 @@
+<Project>
+
+  <!-- The toolkit consumes its own package. Without this, its projects never see
+       the semantics it publishes: lock files were not generated, contracts were not
+       validated, and the scratch consumer was the only thing exercising the rules.
+       A build toolkit that does not build itself with its own rules is untested in
+       the one configuration that matters most. -->
+  <Import Project="$(MSBuildThisFileDirectory)src/Rinzler78.Build/build/Rinzler78.Build.props" />
+
+  <PropertyGroup>
+    <RinzlerLayer>Toolchain</RinzlerLayer>
+  </PropertyGroup>
+
+</Project>

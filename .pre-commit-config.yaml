@@ -10,6 +10,11 @@ repos:
     hooks:
       - id: check-yaml
       - id: check-json
+      - id: check-xml
+        # A malformed props or targets file breaks every consumer of the package,
+        # and the toolkit's own build would not have caught it before it imported
+        # its own output.
+        files: \.(props|targets|csproj|nuspec)$
       - id: check-merge-conflict
       - id: end-of-file-fixer
       - id: trailing-whitespace
