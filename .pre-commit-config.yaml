@@ -41,7 +41,11 @@ repos:
       - id: cspell
         name: spelling (cspell, language en)
         entry: cspell lint --no-progress --no-summary --gitignore
-        language: system
+        # node, not system: a system hook depends on whatever happens to be
+        # installed, which is the opposite of a self-contained harness. It passed
+        # locally and failed on a clean runner with "Executable `cspell` not found".
+        language: node
+        additional_dependencies: ['cspell@9.2.1']
         pass_filenames: true
         stages: [pre-commit]
 

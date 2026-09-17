@@ -6,8 +6,8 @@ node = "22"
 python = "3.12"
 
 [env]
-# Neutralise any newer SDK preview installed system-wide: global.json pins the
-# band, this makes the intent explicit to anyone reading the toolchain.
-DOTNET_ROLL_FORWARD = "latestFeature"
+# The SDK band is pinned by global.json alone. DOTNET_ROLL_FORWARD is deliberately
+# absent: it accepts a different vocabulary from global.json's rollForward, and a
+# value borrowed from one into the other makes every dotnet invocation fail.
 DOTNET_CLI_TELEMETRY_OPTOUT = "1"
 DOTNET_NOLOGO = "1"
