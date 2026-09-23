@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Resolved before evaluation, version pinned in global.json. -->
+  <Sdk Name="Rinzler78.Build" />
+
+  <PropertyGroup>
+    <!-- One framework, and never a platform moniker: unit tests run on the agent.
+         Code that can only be tested on a device is code that sits in the wrong
+         assembly. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RinzlerCoverageContract>Exempt</RinzlerCoverageContract>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- xunit.v3 hosts its own tests: the built assembly *is* the runner, which is
+         how scripts/test.sh invokes it. The mtp-v2 flavour of this package exists for
+         `dotnet test`, and on this SDK band it discovers nothing. -->
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <!-- The analyser, not only the library: NSubstitute's misuses are silent at run
+         time — a mis-ordered Received() assertion passes — and only an analyser
+         catches them. -->
+    <PackageReference Include="NSubstitute.Analyzers.CSharp" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Rinzler78.Sample/Rinzler78.Sample.csproj" />
+  </ItemGroup>
+
+</Project>

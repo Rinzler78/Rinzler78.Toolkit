@@ -1,0 +1,22 @@
+name: Change
+description: A unit of work that will carry an OpenSpec proposal
+labels: [needs-triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem, not the solution
+    validations: {required: true}
+  - type: textarea
+    id: capability
+    attributes:
+      label: Capability affected
+      description: Which OpenSpec capability this touches, or that a new one is needed.
+    validations: {required: true}
+  - type: checkboxes
+    id: gates
+    attributes:
+      label: Before this leaves triage
+      options:
+        - label: The problem is stated without presupposing an implementation
+        - label: The affected capability is named

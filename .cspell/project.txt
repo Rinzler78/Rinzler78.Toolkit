@@ -41,3 +41,10 @@ getconf
 NPROCESSORS
 ONLN
 msbuild
+# Tooling tokens earned in this change
+ACMR
+notrait
+slnx
+xunit
+rinzler
+cobertura

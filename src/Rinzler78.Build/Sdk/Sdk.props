@@ -1,0 +1,16 @@
+<Project>
+
+  <!-- The same file, reached as an MSBuild project SDK rather than as a package
+       reference. The difference is *when*: an SDK is resolved from NuGet before the
+       project is evaluated, so a property it defines can be read by the project
+       body. A package reference cannot do that — its props arrive through
+       {project}.nuget.g.props, which does not exist until restore has run, and
+       restore needs TargetFrameworks to decide what to restore.
+
+       That is not a preference. A named target-framework set delivered by a package
+       reference evaluates to empty, and NuGet reports `Invalid framework
+       identifier ''`. Anything a project reads at evaluation time has to arrive
+       this way. -->
+  <Import Project="$(MSBuildThisFileDirectory)../build/Rinzler78.Build.props" />
+
+</Project>

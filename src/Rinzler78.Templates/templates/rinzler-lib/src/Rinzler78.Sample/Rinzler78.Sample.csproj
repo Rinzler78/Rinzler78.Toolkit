@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Resolved before evaluation, version pinned in global.json. -->
+  <Sdk Name="Rinzler78.Build" />
+
+  <PropertyGroup>
+    <!-- The named set, not a list: the frameworks a portable library targets are a
+         decision of the toolchain, taken once. -->
+    <TargetFrameworks>$(RinzlerPortableTargetFrameworks)</TargetFrameworks>
+    <PackageId>Rinzler78.Sample</PackageId>
+    <Description>Say what this package is, and for whom. A package with no description does not pack.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The packaged README is the repository's own, so the page on nuget.org cannot
+         drift from the page on GitHub. -->
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
+  </ItemGroup>
+
+</Project>

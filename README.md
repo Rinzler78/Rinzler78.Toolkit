@@ -59,6 +59,40 @@ integration and nowhere else. Adding a check is adding a file. A check that decl
 no stage is refused, not skipped, because a check nobody runs is worse than a check
 nobody wrote.
 
+### On gates
+
+Three gates, three responsibilities, chosen by what each one costs and what it
+protects:
+
+| Gate | What runs | Why there |
+|---|---|---|
+| `pre-commit` | the fast offline checks, and **only the tests the staged change can reach** | a commit is part of the loop; it must cost seconds |
+| `pre-push` | the whole unit suite, the vulnerability and freshness scans, the build contracts | the branch is leaving the machine |
+| `pre-merge-commit` | the integration checks and the coverage figure | two histories are becoming one, and that is not a loop |
+
+The selection is computed, not guessed: from the changed files, to the projects that
+own them, to every project that references those transitively, down to the test
+projects in that closure. It errs towards running too much — a change to a build
+manifest, the toolchain pin or the facade itself selects everything — because a
+selection that runs too little produces a green that means nothing.
+
+    ./scripts/test.sh                 every test project
+    ./scripts/test.sh --staged        only what the staged change reaches
+    ./scripts/test.sh --changed       only what this branch changes
+    ./scripts/watch.sh --tests        that same selection, re-run on every save
+
+### On running tests at all
+
+The tests are run by the test project itself — `dotnet run --project` — and not
+through `dotnet test`. On the .NET 10 SDK that command offers two paths and neither
+carries an xUnit v3 assembly of this version: the VSTest bridge is refused outright
+by Microsoft.Testing.Platform, and the platform runner discovers zero tests. The
+assembly is its own runner, and it ran them the moment it was asked directly. One
+layer fewer, and the filters are the runner's own.
+
+Coverage follows from that: a VSTest data collector has nothing to attach to, so
+`dotnet-coverage` wraps the process instead.
+
 ### On measuring
 
 `scripts/bench.sh` times three points — a build with nothing changed, the same

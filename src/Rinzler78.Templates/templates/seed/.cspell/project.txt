@@ -1,0 +1,3 @@
+# Words this repository uses that no dictionary knows. One per line, sorted.
+# A word added here is a decision: the alternative is a spelling nobody checks.
+Rinzler

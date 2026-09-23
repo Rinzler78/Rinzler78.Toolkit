@@ -23,6 +23,12 @@
     <None Include="build/Rinzler78.Build.targets" Pack="true" PackagePath="build/" />
     <None Include="build/Rinzler78.Build.props" Pack="true" PackagePath="buildMultiTargeting/" />
     <None Include="build/Rinzler78.Build.targets" Pack="true" PackagePath="buildMultiTargeting/" />
+    <!-- The same two files, also reachable as an MSBuild project SDK. A consumer
+         that declares this package in global.json's msbuild-sdks gets the semantics
+         *before* evaluation, which is the only way a project can read a named
+         target-framework set from here. -->
+    <None Include="Sdk/Sdk.props" Pack="true" PackagePath="Sdk/" />
+    <None Include="Sdk/Sdk.targets" Pack="true" PackagePath="Sdk/" />
     <None Include="../../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 

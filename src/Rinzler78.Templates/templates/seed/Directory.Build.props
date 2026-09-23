@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- The layer this repository sits in. The vocabulary is declared by the domain
+       policy package, not here: this file states a fact about the repository, and
+       the mechanism that validates it lives in Rinzler78.Build. -->
+  <PropertyGroup>
+    <RinzlerLayer>Unassigned</RinzlerLayer>
+  </PropertyGroup>
+
+</Project>
