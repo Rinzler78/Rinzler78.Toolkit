@@ -25,8 +25,9 @@
     <Deterministic>true</Deterministic>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- IncludeSymbols is decided in the targets, not here: it depends on
+         IncludeBuildOutput, which the consuming project sets after this file is
+         imported. Reading it at this point always yields an empty value. -->
   </PropertyGroup>
   <PropertyGroup Condition="'$(CI)' == 'true' or '$(TF_BUILD)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>

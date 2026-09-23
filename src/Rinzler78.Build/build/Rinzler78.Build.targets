@@ -3,6 +3,20 @@
   <!-- Imported after the consuming project, so these rules see its final values
        and can refuse a combination the project set. -->
 
+  <!-- A symbol package needs an assembly to carry symbols for. A project shipping no
+       build output — a props/targets package, a template pack — produces an empty
+       .snupkg, and pack fails with NU5017 *while still emitting the main package*, so
+       the failure reads like noise and gets ignored.
+
+       This lives in the targets because it depends on IncludeBuildOutput, which the
+       consuming project sets after the props are imported: the same evaluation-order
+       trap that already cost two rules. -->
+  <PropertyGroup>
+    <IncludeSymbols Condition="'$(IncludeBuildOutput)' != 'false'">true</IncludeSymbols>
+    <IncludeSymbols Condition="'$(IncludeBuildOutput)' == 'false'">false</IncludeSymbols>
+    <SymbolPackageFormat Condition="'$(IncludeSymbols)' == 'true'">snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
   <!-- Trimming and ahead-of-time compatibility require net6.0 or later. Declaring
        them on netstandard2.0 produces a project that cannot build, so the contract
        is applied through a framework test rather than a string comparison. -->
