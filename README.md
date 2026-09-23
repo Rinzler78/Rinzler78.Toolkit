@@ -17,10 +17,15 @@ ecosystem is its first consumer, not its subject.
 
 ## Getting started
 
+    bash scripts/setup-env.sh        # the bootstrap: also restores the facade's mode
     ./scripts/setup-env.sh --check   # reports what is missing, changes nothing
-    ./scripts/setup-env.sh           # converges the machine to the declared toolchain
     ./scripts/build.sh
     ./scripts/test.sh
+
+The first call goes through `bash`: a repository expanded from the template arrives
+without the executable bit — `dotnet new` cannot carry a file mode — so the facade
+cannot restore its own mode by executing itself. Afterwards every call uses `./`, and a
+commit that records a non-executable script is refused.
 
 Every repository in the ecosystem exposes the same verbs at the same place:
 

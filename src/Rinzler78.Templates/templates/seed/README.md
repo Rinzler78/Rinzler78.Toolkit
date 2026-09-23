@@ -6,10 +6,14 @@ rewrite it for the subject, and keep it true — a blocking check reads it.
 
 ## Getting started
 
-    ./scripts/setup-env.sh --check
+    bash scripts/setup-env.sh          # the first command, and the only one with `bash`
     ./scripts/restore.sh
     ./scripts/build.sh
     ./scripts/test.sh
+
+The first invocation goes through `bash` on purpose: `dotnet new` cannot carry a file
+mode, so on a fresh expansion the facade is not yet executable and cannot restore its
+own mode by executing itself. `setup-env` restores it, and every later call uses `./`.
 
 `--check` is non-mutating: it reports what is missing instead of installing it, which
 is what makes it usable as a continuous integration gate.
