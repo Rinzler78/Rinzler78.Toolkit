@@ -99,7 +99,11 @@ fi
 failed=()
 for hook in "${selected[@]}"; do
   log "${hook#"$REPO_ROOT"/}"
-  "$hook" || failed+=("${hook#"$REPO_ROOT"/}")
+  # Through bash, like the pre-commit entry: a freshly generated repository's scripts
+  # are not executable yet, and the check that reports exactly that has to be able to
+  # run. Executing them directly made the first check of every new repository stop on
+  # "permission denied".
+  bash "$hook" || failed+=("${hook#"$REPO_ROOT"/}")
 done
 
 ((${#failed[@]} == 0)) || fail "$(printf '%s ' "failed:" "${failed[@]}")"

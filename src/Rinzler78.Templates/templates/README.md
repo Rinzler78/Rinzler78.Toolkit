@@ -38,7 +38,20 @@ facade arrives as `0644` and its first commit would record that for every clone.
 `chmod` post action is not implemented by the .NET CLI host — it reports "the post
 action is not supported" and exits non-zero. So the mode is a checked property
 instead: `scripts/hooks/scripts-are-executable.sh` refuses a commit that records a
-non-executable script, and `./scripts/setup-env.sh` restores it.
+non-executable script, and `bash scripts/setup-env.sh` restores it — through `bash`,
+because that script cannot execute itself either.
 
 For the same reason the pre-commit configuration invokes its entry as
-`bash scripts/checks.sh`: the check that reports the mode has to be able to run.
+`bash scripts/checks.sh`, and `checks.sh` runs each hook as `bash "$hook"`: the check
+that reports the mode has to be able to run before the mode is right.
+
+## Keeping the shared copy honest
+
+`shared/` is this repository's own harness, byte for byte, and
+`scripts/hooks/harness-regenerates.sh` fails when the two drift — for all three
+templates, because each wires the shared directory through its own `sources` and a
+mistyped path would otherwise ship behind a green `rinzler-lib`.
+
+`scripts/_sync-template.sh` performs the copy, with the exclusion list and the spelling
+config's rename in one place. Retyping that list at a prompt cost the same mistake
+twice: once dropping the two skill READMEs, once deleting the renamed configuration.

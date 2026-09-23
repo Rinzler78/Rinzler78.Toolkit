@@ -9,7 +9,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../_common.sh"
 
 report=$(cd "$REPO_ROOT" && dotnet list package --vulnerable --include-transitive 2>&1)
 printf '%s\n' "$report"
-if grep -qE '^\s+>' <<<"$report"; then
+if grep -qE '^[[:space:]]+>' <<<"$report"; then
   fail 'vulnerable packages found — raise the version, do not add an ignore entry'
 fi
 log 'no vulnerable package'

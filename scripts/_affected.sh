@@ -140,10 +140,10 @@ changed_files() {
     staged) (cd "$REPO_ROOT" && git diff --cached --name-only --diff-filter=ACMR) ;;
     range)
       local base=$2 merge_base
-      merge_base=$(cd "$REPO_ROOT" && git merge-base HEAD "$base" 2>/dev/null) || {
-        log "no merge base with $base: selecting everything" >&2
-        return 0
-      }
+      # No merge base means the comparison is impossible, not that nothing changed.
+      # Returning an empty list here would have selected nothing while announcing the
+      # opposite: the caller reads a non-zero status as "compare against everything".
+      merge_base=$(cd "$REPO_ROOT" && git merge-base HEAD "$base" 2>/dev/null) || return 1
       (
         cd "$REPO_ROOT" && git diff --name-only --diff-filter=ACMR "$merge_base" HEAD
         git diff --name-only --diff-filter=ACMR

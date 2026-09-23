@@ -37,8 +37,15 @@ if ((watch_tests)); then
   if [[ -n "$base" ]]; then
     while IFS= read -r f; do files+=("$f"); done < <(changed_files range "$base")
   fi
-  selection=$(affected_test_projects ${files[@]+"${files[@]}"} | head -1)
+  selection=$(affected_test_projects ${files[@]+"${files[@]}"})
   [[ -n "$selection" ]] || fail 'no test project is reachable from this change; name one explicitly'
+  if (($(printf '%s\n' "$selection" | grep -c .) > 1)); then
+    # `dotnet watch` watches one project. Picking the first silently would watch a
+    # fraction of what the change reaches while the documentation promises the whole
+    # selection — an under-test that looks like a pass.
+    printf '%s\n' "$selection"
+    fail 'this change reaches several test projects; name the one to watch, or use ./scripts/test.sh --changed'
+  fi
   log "watching ${selection}"
   run dotnet watch --project "$REPO_ROOT/$selection" run -- -trait- 'Category=Integration'
   exit 0

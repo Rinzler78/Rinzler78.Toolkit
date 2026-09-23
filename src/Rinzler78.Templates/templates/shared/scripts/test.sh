@@ -41,14 +41,24 @@ case $scope in
   all) while IFS= read -r p; do projects+=("$p"); done < <(affected_test_projects) ;;
   staged)
     files=()
-    while IFS= read -r f; do files+=("$f"); done < <(changed_files staged)
+    while IFS= read -r f; do [[ -n "$f" ]] && files+=("$f"); done < <(changed_files staged)
+    # Nothing staged is nothing to test — and bash 3.2 refuses to expand an empty
+    # array under `set -u`, which is why every such expansion here is guarded.
+    ((${#files[@]} > 0)) || {
+      log 'nothing staged: no test to run'
+      exit 0
+    }
     while IFS= read -r p; do projects+=("$p"); done < <(affected_test_projects "${files[@]}")
     ;;
   changed)
     [[ -n "$base" ]] || base=$(integration_branch) || fail 'no integration branch to compare against'
     files=()
-    while IFS= read -r f; do files+=("$f"); done < <(changed_files range "$base")
-    while IFS= read -r p; do projects+=("$p"); done < <(affected_test_projects "${files[@]}")
+    if diff=$(changed_files range "$base"); then
+      while IFS= read -r f; do [[ -n "$f" ]] && files+=("$f"); done <<<"$diff"
+    else
+      log "no merge base with $base: every test project is selected"
+    fi
+    while IFS= read -r p; do projects+=("$p"); done < <(affected_test_projects ${files[@]+"${files[@]}"})
     ;;
 esac
 

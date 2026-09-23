@@ -25,23 +25,26 @@
 source "$(dirname "${BASH_SOURCE[0]}")/../_common.sh"
 
 readonly TEMPLATE_ROOT="$REPO_ROOT/src/Rinzler78.Templates"
-readonly TEMPLATE=rinzler-lib
-readonly SEEDS="$TEMPLATE_ROOT/templates/$TEMPLATE/.template.config/seeds.txt"
+# Every published template, not only the first: the harness is shared, but each
+# template wires it through its own `sources` — a missing rename or a mistyped path
+# would have shipped unnoticed while the lib template stayed green.
+readonly TEMPLATES=(rinzler-lib rinzler-binding rinzler-app)
 
 if [[ -z "$(find "$TEMPLATE_ROOT" -name '.template.config' -type d 2>/dev/null)" ]]; then
   log 'no template yet: nothing to regenerate, nothing verified'
   exit 0
 fi
 
-[[ -f "$SEEDS" ]] || fail "the template declares no seeds: $SEEDS"
+scratch=$(mktemp -d)
+trap 'rm -rf "$scratch"' EXIT
 
-seeds=()
-while IFS= read -r pattern; do
-  [[ -z "$pattern" || "$pattern" == '#'* ]] && continue
-  seeds+=("$pattern")
-done <"$SEEDS"
-((${#seeds[@]} > 0)) || fail 'the seed list is empty: every generated file would be compared'
+# The repository's name, not the directory's: a worktree is named after its branch,
+# and the generated seeds would then carry the branch slug.
+name=$(cd "$REPO_ROOT" && basename -s .git "$(git config --get remote.origin.url 2>/dev/null)" 2>/dev/null)
+[[ -n "$name" ]] || name=$(basename "$REPO_ROOT")
 
+# Matched as a shell pattern, in which `*` also crosses directory separators, so
+# `src/*` is the whole tree under src/.
 is_seed() {
   local path=$1 pattern
   for pattern in "${seeds[@]}"; do
@@ -51,39 +54,52 @@ is_seed() {
   return 1
 }
 
-scratch=$(mktemp -d)
-trap 'rm -rf "$scratch"' EXIT
-
 run dotnet new install "$TEMPLATE_ROOT" --force
-# The repository's name, not the directory's: a worktree is named after its branch,
-# and the generated seeds would then carry the branch slug.
-name=$(cd "$REPO_ROOT" && basename -s .git "$(git config --get remote.origin.url 2>/dev/null)" 2>/dev/null)
-[[ -n "$name" ]] || name=$(basename "$REPO_ROOT")
-
-run dotnet new "$TEMPLATE" --output "$scratch/generated" --name "$name"
 
 divergent=0
-compared=0
-seeded=0
-while IFS= read -r -d '' generated; do
-  relative=${generated#"$scratch/generated/"}
-  committed="$REPO_ROOT/$relative"
+for template in "${TEMPLATES[@]}"; do
+  seeds_file="$TEMPLATE_ROOT/templates/$template/.template.config/seeds.txt"
+  [[ -f "$seeds_file" ]] || fail "$template declares no seeds: $seeds_file"
 
-  if is_seed "$relative"; then
-    seeded=$((seeded + 1))
-    continue
-  fi
+  seeds=()
+  while IFS= read -r pattern; do
+    [[ -z "$pattern" || "$pattern" == '#'* ]] && continue
+    seeds+=("$pattern")
+  done <"$seeds_file"
+  ((${#seeds[@]} > 0)) || fail "$template: the seed list is empty, every generated file would be compared"
 
-  compared=$((compared + 1))
-  if [[ ! -f "$committed" ]]; then
-    printf 'missing from the repository: %s\n' "$relative"
-    divergent=$((divergent + 1))
-  elif ! cmp -s "$generated" "$committed"; then
-    printf 'differs from the template: %s\n' "$relative"
-    divergent=$((divergent + 1))
-  fi
-done < <(find "$scratch/generated" -type f -print0)
+  output="$scratch/$template"
+  run dotnet new "$template" --output "$output" --name "$name"
 
-((compared > 0)) || fail 'every generated file was declared a seed: nothing was verified'
-((divergent == 0)) || fail "$divergent harness file(s) diverge from the template"
-log "$compared harness file(s) regenerate byte-identically, $seeded seed(s) left to the repository"
+  compared=0
+  seeded=0
+  diverged_here=0
+  while IFS= read -r -d '' generated; do
+    relative=${generated#"$output/"}
+    committed="$REPO_ROOT/$relative"
+
+    if is_seed "$relative"; then
+      seeded=$((seeded + 1))
+      continue
+    fi
+
+    compared=$((compared + 1))
+    if [[ ! -f "$committed" ]]; then
+      printf '%s: missing from the repository: %s\n' "$template" "$relative"
+      divergent=$((divergent + 1))
+      diverged_here=$((diverged_here + 1))
+    elif ! cmp -s "$generated" "$committed"; then
+      printf '%s: differs from the template: %s\n' "$template" "$relative"
+      divergent=$((divergent + 1))
+      diverged_here=$((diverged_here + 1))
+    fi
+  done < <(find "$output" -type f -print0)
+
+  ((compared > 0)) || fail "$template: every generated file was declared a seed, nothing was verified"
+  # The count of files compared is not a count of files that matched: a summary that
+  # says "42 regenerate byte-identically" above a list of seven that do not is how a
+  # reader learns to skim past the summary.
+  log "$template: $((compared - diverged_here))/$compared harness file(s) identical, $diverged_here divergent, $seeded seed(s) left to the repository"
+done
+
+((divergent == 0)) || fail "$divergent harness file(s) diverge from the template — run ./scripts/_sync-template.sh if the repository is the side that changed"

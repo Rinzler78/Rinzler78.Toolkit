@@ -12,7 +12,7 @@ readonly MAX_DRIFT_DAYS="${MAX_DRIFT_DAYS:-14}"
 report=$(cd "$REPO_ROOT" && dotnet list package --outdated 2>&1)
 printf '%s\n' "$report"
 
-if ! grep -qE '^\s+>' <<<"$report"; then
+if ! grep -qE '^[[:space:]]+>' <<<"$report"; then
   log 'no outdated package'
   exit 0
 fi
