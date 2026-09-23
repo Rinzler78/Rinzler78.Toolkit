@@ -133,4 +133,32 @@ cat >"$scratch/Consumer.csproj" <<PROJ
 PROJ
 build_succeeds 'a project declaring no policy'
 
+# A package with no build output — props/targets, a template pack — must pack
+# cleanly. It used to emit NU5017 for an empty symbol package while still writing the
+# main one, which is the worst shape of failure: visible and ignorable.
+cat >"$scratch/NoOutput.csproj" <<PROJ
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$BUILD_DIR/Rinzler78.Build.props" />
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoWarn>\$(NoWarn);NU5128</NoWarn>
+    <RinzlerLayer>Toolchain</RinzlerLayer>
+    <Description>A package that ships no assembly. Not affiliated with Acme.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- NuGet requires a props file under build/ to be named after the package id,
+         so the fixture renames it rather than tripping NU5129 on its own layout. -->
+    <None Include="$BUILD_DIR/Rinzler78.Build.props" Pack="true" PackagePath="build/NoOutput.props" />
+  </ItemGroup>
+  <Import Project="$BUILD_DIR/Rinzler78.Build.targets" />
+</Project>
+PROJ
+if ! output=$(dotnet pack "$scratch/NoOutput.csproj" --nologo --output "$scratch/out" 2>&1); then
+  printf '%s\n' "$output" | tail -5
+  fail 'a package with no build output failed to pack'
+fi
+grep -q 'NU5017' <<<"$output" && fail 'pack emitted NU5017 for an empty symbol package'
+log 'a package with no build output packs cleanly'
+
 log 'build mechanisms are enforced, and neutral where nothing is declared'

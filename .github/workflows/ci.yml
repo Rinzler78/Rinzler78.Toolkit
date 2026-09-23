@@ -56,6 +56,12 @@ jobs:
         env:
           CONFIGURATION: Release
 
+      # package was absent from the verify job, so a pack failure reached develop
+      # unnoticed: NU5017 is emitted alongside a successfully written package, which
+      # reads like noise. A facade verb nothing exercises is a verb nobody trusts.
+      - name: Package
+        run: ./scripts/package.sh
+
       - name: Build contracts are enforced
         run: ./scripts/hooks/build-contracts-enforced.sh
 
