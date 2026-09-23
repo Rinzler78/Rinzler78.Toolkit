@@ -57,32 +57,20 @@ repos:
         files: \.(cs|csproj|props|targets|sln)$
         stages: [pre-commit]
 
-      - id: entry-points-agree
-        name: CLAUDE.md and AGENTS.md agree
-        entry: scripts/hooks/entry-points-agree.sh
+      # The four checks that used to be listed here, plus the two that were only
+      # ever listed in the workflow, now come from one place: scripts/hooks/, where
+      # each check declares its own stage. Two copies of one inventory drifted
+      # within days, and the copy nobody read was the one in this file.
+      - id: repository-checks
+        name: repository checks (fast, offline)
+        entry: scripts/checks.sh --stage pre-commit
         language: system
         pass_filenames: false
-        files: ^(CLAUDE|AGENTS)\.md$
         stages: [pre-commit]
 
-      - id: docs-are-true
-        name: documents agree with the repository
-        entry: scripts/hooks/docs-are-true.sh
-        language: system
-        pass_filenames: false
-        files: ^(README\.md|CLAUDE\.md|AGENTS\.md|scripts/.*\.sh)$
-        stages: [pre-commit]
-
-      - id: dotnet-vulnerable
-        name: C# vulnerability scan
-        entry: scripts/hooks/no-vulnerable-packages.sh
-        language: system
-        pass_filenames: false
-        stages: [pre-push]
-
-      - id: dotnet-outdated
-        name: C# dependency freshness
-        entry: scripts/hooks/no-stale-packages.sh
+      - id: repository-checks-slow
+        name: repository checks (slow, or network)
+        entry: scripts/checks.sh --stage pre-push
         language: system
         pass_filenames: false
         stages: [pre-push]

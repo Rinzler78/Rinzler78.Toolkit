@@ -2,6 +2,9 @@
 # The toolkit's own verification: its harness must be reproducible, byte for byte,
 # from the template it ships. Until the template exists this check has nothing to
 # compare, and says so rather than reporting a success it did not earn.
+# rinzler-stage: pre-push
+# Installing the template pack and regenerating a repository is too slow for a
+# commit, and too important to leave to CI alone.
 # shellcheck source=scripts/_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../_common.sh"
 

@@ -8,6 +8,7 @@
 # entry points already agree with *each other*; nothing made them agree with the
 # code, and a review caught exactly that. So every document that enumerates verbs is
 # checked against the directory, in both directions.
+# rinzler-stage: pre-commit
 # shellcheck source=scripts/_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../_common.sh"
 
@@ -34,7 +35,10 @@ for document in "$README" "$REPO_ROOT/CLAUDE.md" "$REPO_ROOT/AGENTS.md"; do
   for script in "$REPO_ROOT"/scripts/*.sh; do
     verb=$(basename "$script" .sh)
     [[ "$verb" == _* ]] && continue
-    grep -qF "$verb" "$document" || {
+    # In a code context — `verb` or scripts/verb.sh — never as a bare word. The
+    # README says "the blocking checks" in a sentence of prose, which satisfied a
+    # search for the `checks` verb while that verb was undocumented.
+    grep -qE "\`$verb\`|scripts/$verb\.sh" "$document" || {
       printf '%s does not mention the script verb: %s\n' "$name" "$verb"
       missing=$((missing + 1))
     }

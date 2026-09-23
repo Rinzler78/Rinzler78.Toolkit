@@ -2,6 +2,8 @@
 # Dependency freshness is blocking, but measured as unattended drift rather than
 # instantaneously: an automated bump needs time to land, and failing the moment an
 # upstream releases would deadlock against the update bot.
+# rinzler-stage: pre-push
+# Queries the network.
 # shellcheck source=scripts/_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../_common.sh"
 

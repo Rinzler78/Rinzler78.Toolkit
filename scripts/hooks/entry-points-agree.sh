@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # CLAUDE.md and AGENTS.md must carry an identical shared block. Prose cannot enforce
 # agreement; a diff can.
+# rinzler-stage: pre-commit
 # shellcheck source=scripts/_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../_common.sh"
 

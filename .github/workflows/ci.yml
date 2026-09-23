@@ -37,12 +37,6 @@ jobs:
       - name: Toolchain check
         run: ./scripts/setup-env.sh --check
 
-      - name: Documents agree with the repository
-        run: ./scripts/hooks/docs-are-true.sh
-
-      - name: Entry points agree
-        run: ./scripts/hooks/entry-points-agree.sh
-
       - name: Restore, locked
         run: dotnet restore --locked-mode
 
@@ -62,14 +56,11 @@ jobs:
       - name: Package
         run: ./scripts/package.sh
 
-      - name: Build contracts are enforced
-        run: ./scripts/hooks/build-contracts-enforced.sh
-
-      - name: Harness regenerates byte-identically
-        run: ./scripts/hooks/harness-regenerates.sh
-
-      - name: Vulnerability scan
-        run: ./scripts/hooks/no-vulnerable-packages.sh
+      # One step, one inventory: every check in scripts/hooks/, whatever stage it
+      # declares. Enumerating them here is how two of them came to run in CI and
+      # nowhere else.
+      - name: Repository checks
+        run: ./scripts/checks.sh --stage all
 
   lint:
     runs-on: ubuntu-latest

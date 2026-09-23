@@ -6,6 +6,9 @@
 # The consumer also supplies the *policy* — accepted layers, forbidden
 # dependencies, required analysers, required description fragment — because this
 # package knows how to refuse, not what to refuse.
+# rinzler-stage: pre-push
+# Packing eleven scratch consumers is measured in tens of seconds, not in the
+# fraction of a second a commit can absorb.
 # shellcheck source=scripts/_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../_common.sh"
 
