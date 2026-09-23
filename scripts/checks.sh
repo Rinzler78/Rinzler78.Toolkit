@@ -43,6 +43,11 @@ done
 
 [[ "$stage" == all || " ${STAGES[*]} " == *" $stage "* ]] || usage
 
+supported() {
+  local IFS='|'
+  echo "${STAGES[*]}"
+}
+
 declared_stage() {
   sed -n 's/^# rinzler-stage:[[:space:]]*\([a-z-]*\).*/\1/p' "$1" | head -1
 }
@@ -57,12 +62,16 @@ for hook in "$HOOK_DIR"/*.sh; do
   [[ "$name" == _* ]] && continue
 
   declared=$(declared_stage "$hook")
-  if [[ " ${STAGES[*]} " != *" $declared "* ]]; then
+  if [[ -z "$declared" ]]; then
     printf 'scripts/hooks/%s declares no stage: add "# rinzler-stage: %s"\n' \
-      "$name" "$(
-        IFS='|'
-        echo "${STAGES[*]}"
-      )"
+      "$name" "$(supported)"
+    undeclared=$((undeclared + 1))
+    continue
+  elif [[ " ${STAGES[*]} " != *" $declared "* ]]; then
+    # An unsupported value is a different mistake from a missing line, and a
+    # diagnosis that names the wrong one sends the reader to the wrong place.
+    printf 'scripts/hooks/%s declares an unsupported stage: %s (expected %s)\n' \
+      "$name" "$declared" "$(supported)"
     undeclared=$((undeclared + 1))
     continue
   fi
@@ -70,7 +79,7 @@ for hook in "$HOOK_DIR"/*.sh; do
   [[ "$stage" == all || "$declared" == "$stage" ]] && selected+=("$hook")
 done
 
-((undeclared == 0)) || fail "$undeclared check(s) declare no stage"
+((undeclared == 0)) || fail "$undeclared check(s) do not declare a usable stage"
 ((${#selected[@]} > 0)) || fail "no check to run for stage: $stage"
 
 # fail_fast is false by design: a developer wants every problem in one pass, not the
