@@ -50,6 +50,12 @@ The repository's own checks are one script each in `scripts/hooks/`, declaring
 `# rinzler-stage:` in their header; `scripts/checks.sh` discovers them, and nothing
 enumerates them a second time. Adding a check is adding a file.
 
+Three gates carry different responsibilities: `pre-commit` runs the fast checks and
+only the tests the staged change can reach, `pre-push` runs the whole unit suite and
+the network scans, `pre-merge-commit` runs the integration checks and coverage.
+`scripts/test.sh --staged`, `--changed` and `scripts/watch.sh --tests` use the same
+computed selection. Tests are run by the test project itself, not by `dotnet test`.
+
 Speed and configuration are parameters, not verbs: `CONFIGURATION=Release` selects
 the configuration, and there is deliberately no `fast-build`. A variant script is a
 second build semantics that continuous integration never exercises.

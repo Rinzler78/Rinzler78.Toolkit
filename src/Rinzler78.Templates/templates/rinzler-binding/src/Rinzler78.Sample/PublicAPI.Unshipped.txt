@@ -1,0 +1,3 @@
+#nullable enable
+Rinzler78.Sample.Library
+static Rinzler78.Sample.Library.Name.get -> string!

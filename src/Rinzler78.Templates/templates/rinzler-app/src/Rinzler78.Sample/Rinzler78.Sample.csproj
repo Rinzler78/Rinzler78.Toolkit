@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Resolved before evaluation, version pinned in global.json. -->
+  <Sdk Name="Rinzler78.Build" />
+
+  <PropertyGroup>
+    <!-- An application ships to a user, not to a consumer: one framework, no
+         package, and therefore no public API baseline to record. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- An application's types are internal — nothing outside the assembly calls
+         them, and the analyser says so — which leaves its own tests as the one
+         legitimate exception, declared rather than worked around. -->
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+
+</Project>

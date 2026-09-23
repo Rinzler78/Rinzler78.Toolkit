@@ -110,4 +110,26 @@
            Text="The package description must contain: $(RinzlerRequiredDescription)" />
   </Target>
 
+  <!-- Two rules about a published surface, stopping where there is none.
+
+       CS1591 asks for documentation: xUnit requires a test class to be public, and
+       the rule then demands prose about a fixture that has no consumer.
+
+       CA1707 forbids underscores in a member name: a test name is a sentence read by
+       a human in a failure report — `Name_is_the_simple_name_of_the_assembly` — not
+       an identifier anyone calls. Renaming it to satisfy a naming convention written
+       for public API is the check driving the code, which is the wrong way round.
+
+       Neither can be a condition in the props: IsTestProject is set by the project,
+       which is evaluated after an imported props file, so the condition would never
+       fire. Third time this order has cost a rule — it is written down at each site
+       it bit. -->
+  <Target Name="RinzlerRelaxSurfaceRulesForTests" BeforeTargets="CoreCompile"
+          Condition="'$(IsTestProject)' == 'true'">
+    <PropertyGroup>
+      <NoWarn>$(NoWarn);CS1591;CA1707</NoWarn>
+      <WarningsAsErrors>$(WarningsAsErrors.Replace('CS1591', '').Replace('CA1707', ''))</WarningsAsErrors>
+    </PropertyGroup>
+  </Target>
+
 </Project>

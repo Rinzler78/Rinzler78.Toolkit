@@ -1,0 +1,73 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [develop, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      # setup-env --check is a gate, so the runner must carry what it checks:
+      # asserting the presence of a tool the workflow never installs turns the
+      # gate into a guaranteed failure.
+      - uses: jdx/mise-action@v2
+
+      # setup-env --check asserts the declared toolchain, and pre-commit is part of
+      # it. A job that checks for a tool it never installs fails on the check rather
+      # than on the code.
+      - run: pipx install pre-commit
+
+      - name: Toolchain check
+        run: ./scripts/setup-env.sh --check
+
+      - name: Restore, locked
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        run: ./scripts/build.sh
+        env:
+          CONFIGURATION: Release
+
+      - name: Test
+        run: ./scripts/test.sh
+        env:
+          CONFIGURATION: Release
+
+      # package was absent from the verify job, so a pack failure reached develop
+      # unnoticed: NU5017 is emitted alongside a successfully written package, which
+      # reads like noise. A facade verb nothing exercises is a verb nobody trusts.
+      - name: Package
+        run: ./scripts/package.sh
+
+      # One step, one inventory: every check in scripts/hooks/, whatever stage it
+      # declares. Enumerating them here is how two of them came to run in CI and
+      # nowhere else.
+      - name: Repository checks
+        run: ./scripts/checks.sh --stage all
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pipx install pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure

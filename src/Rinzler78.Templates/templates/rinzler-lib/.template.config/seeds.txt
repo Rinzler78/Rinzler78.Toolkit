@@ -1,0 +1,22 @@
+# Files this template expands once and then stops owning.
+#
+# A harness file is compared byte for byte for the lifetime of the repository; a seed
+# is repository-specific by construction — a README that could not be edited would
+# describe nothing. The distinction is declared here, in the template, so that the
+# regeneration check reads it instead of restating it. Anything the template ships
+# and this file does not name is harness.
+#
+# One pattern per line, relative to the repository root, matched as a shell
+# pattern in which `*` also crosses directory separators — so `src/*` is the whole
+# tree under src/.
+README.md
+CLAUDE.md
+AGENTS.md
+*.slnx
+Directory.Build.props
+Directory.Build.targets
+Directory.Packages.props
+.cspell/project.txt
+src/*
+tests/*
+native/*

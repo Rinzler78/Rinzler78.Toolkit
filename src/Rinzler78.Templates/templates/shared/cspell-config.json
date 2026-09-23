@@ -1,0 +1,26 @@
+{
+  "version": "0.2",
+  "language": "en,en-GB",
+  "useGitignore": false,
+  "ignorePaths": [
+    "**/bin/**",
+    "**/obj/**",
+    "artifacts/**",
+    ".git/**",
+    "**/*.lock.json"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "project",
+      "path": ".cspell/project.txt",
+      "addWords": true
+    }
+  ],
+  "dictionaries": [
+    "project"
+  ],
+  "ignoreRegExpList": [
+    "/'[0-9a-fA-F]{6}'/",
+    "/\\\\033\\\\[[0-9;]*m/"
+  ]
+}

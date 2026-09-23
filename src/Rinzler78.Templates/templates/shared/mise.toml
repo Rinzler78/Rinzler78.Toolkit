@@ -1,0 +1,13 @@
+# Declared toolchain. `mise install` converges the machine; `scripts/setup-env.sh
+# --check` reports without mutating.
+[tools]
+dotnet = "10.0.100"
+node = "22"
+python = "3.12"
+
+[env]
+# The SDK band is pinned by global.json alone. DOTNET_ROLL_FORWARD is deliberately
+# absent: it accepts a different vocabulary from global.json's rollForward, and a
+# value borrowed from one into the other makes every dotnet invocation fail.
+DOTNET_CLI_TELEMETRY_OPTOUT = "1"
+DOTNET_NOLOGO = "1"

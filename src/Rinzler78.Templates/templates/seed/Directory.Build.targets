@@ -1,0 +1,6 @@
+<Project>
+
+  <!-- Repository-wide targets. Empty by default: the mechanisms arrive with the
+       Rinzler78.Build package, which every project references. -->
+
+</Project>
