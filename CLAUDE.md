@@ -44,7 +44,11 @@ Every repository in the ecosystem exposes the same verbs at the same place:
     scripts/run.sh                   scripts/deploy.sh    scripts/package.sh
     scripts/publish.sh               scripts/docs.sh      scripts/lint.sh
     scripts/format.sh                scripts/e2e.sh       scripts/bench.sh
-    scripts/clean.sh
+    scripts/clean.sh                 scripts/checks.sh [--stage pre-commit|pre-push]
+
+The repository's own checks are one script each in `scripts/hooks/`, declaring
+`# rinzler-stage:` in their header; `scripts/checks.sh` discovers them, and nothing
+enumerates them a second time. Adding a check is adding a file.
 
 Speed and configuration are parameters, not verbs: `CONFIGURATION=Release` selects
 the configuration, and there is deliberately no `fast-build`. A variant script is a

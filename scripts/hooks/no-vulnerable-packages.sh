@@ -2,6 +2,8 @@
 # Fails on any known-vulnerable transitive or direct package. The advisory database
 # is queried over the network: that is a legitimate network use, unlike fetching
 # harness content.
+# rinzler-stage: pre-push
+# Queries the advisory database over the network.
 # shellcheck source=scripts/_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../_common.sh"
 

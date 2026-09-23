@@ -34,6 +34,7 @@ Every repository in the ecosystem exposes the same verbs at the same place:
 | `package` `publish` | Pack, then push to nuget.org. |
 | `docs` | Build the API documentation site. |
 | `lint` `format` | The blocking checks, and the formatter that satisfies them. |
+| `checks` | The repository's own checks, discovered in `scripts/hooks/`; `--stage` selects. |
 | `e2e` | The end-to-end suite. |
 | `bench` | Measure the build, so that "fast" is a number. |
 | `clean` | Remove everything not tracked. |
@@ -42,6 +43,21 @@ There is deliberately no `fast-build` and no `build-release`. Speed and configur
 are parameters, not actions: a variant script is a second build semantics that
 continuous integration never exercises, which is how "it works on my machine" is
 manufactured. `dotnet build` is already incremental.
+
+### On checks
+
+A repository's own checks live in `scripts/hooks/`, one script each, and each one
+declares in its header when it runs:
+
+    # rinzler-stage: pre-commit    fast and offline
+    # rinzler-stage: pre-push      slow, or needs the network
+
+`scripts/checks.sh` discovers them. Nothing enumerates them a second time: the
+inventory was previously written once in `.pre-commit-config.yaml` and once in the
+workflow, and the two copies drifted within days — two checks ran in continuous
+integration and nowhere else. Adding a check is adding a file. A check that declares
+no stage is refused, not skipped, because a check nobody runs is worse than a check
+nobody wrote.
 
 ### On measuring
 
