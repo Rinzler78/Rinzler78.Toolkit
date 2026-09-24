@@ -40,6 +40,11 @@ jobs:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
+          # The branch releases are cut from, stated rather than inferred. Release Please
+          # defaults to the repository's *default* branch — `develop` here — not to the
+          # branch that triggered the run, so the first run built a release branch off
+          # `develop` while this workflow only ever triggers on `master`.
+          target-branch: master
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
