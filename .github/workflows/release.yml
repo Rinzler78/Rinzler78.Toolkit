@@ -9,6 +9,7 @@ name: release
 #
 # The policy is registered once per repository on nuget.org, under Trusted Publishing:
 #   Repository Owner: Rinzler78 · Repository: <this repository> · Workflow: release.yml
+#   Environment: release — restricted, in the repository settings, to `master`
 #
 # Release Please owns the version. It is computed from Conventional Commits, never
 # edited by hand, and there is no second versioning mechanism.
@@ -52,6 +53,13 @@ jobs:
     needs: release-please
     if: needs.release-please.outputs.released == 'true'
     runs-on: ubuntu-latest
+    # The binding to `master` lives here, not in the trigger above. A nuget.org policy
+    # matches the owner, the repository, the workflow *file name* and the environment —
+    # never the branch — so without an environment any branch carrying a file named
+    # release.yml could mint a key, and a feature branch rewriting that file to trigger
+    # on its own push would publish without review. The `release` environment only
+    # admits deployments from `master`, and the policy requires it.
+    environment: release
     permissions:
       # The only permission publication needs: the token is exchanged with nuget.org,
       # and nothing in this job may write to the repository.

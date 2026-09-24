@@ -96,9 +96,15 @@ repositories is nineteen copies of one credential to rotate, and one of them wil
 forgotten.
 
 The policy is registered once per repository, on nuget.org under *Trusted Publishing*:
-repository owner `Rinzler78`, this repository, workflow file `release.yml`, permitted to
-push new packages as well as new versions — a scope limited to selected *existing*
+repository owner `Rinzler78`, this repository, workflow file `release.yml`, environment
+`release`, permitted to push new packages as well as new versions — a scope limited to selected *existing*
 packages cannot push a new identifier, which is what every package here is.
+
+The environment is not optional. A policy matches the workflow's *file name*, never
+its branch, so without one any branch carrying a `release.yml` could mint a key — a
+feature branch rewriting that file to trigger on its own push would publish without
+review. The `release` environment admits deployments from `master` only, and the policy
+requires it.
 
 Its scope names **only the identifiers this repository publishes**, never the whole
 `Rinzler78.*` namespace. A policy is a grant to the workflow that matches it, so a
