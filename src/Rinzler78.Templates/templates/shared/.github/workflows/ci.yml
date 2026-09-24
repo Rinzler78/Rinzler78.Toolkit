@@ -55,6 +55,10 @@ jobs:
       # reads like noise. A facade verb nothing exercises is a verb nobody trusts.
       - name: Package
         run: ./scripts/package.sh
+        env:
+          # Nothing is pushed from here, but a package built outside a release must not
+          # carry a version that could be mistaken for one.
+          VERSION_SUFFIX: ${{ github.ref == 'refs/heads/develop' && format('develop.{0}', github.run_number) || format('ci.{0}', github.run_number) }}
 
       # One step, one inventory: every check in scripts/hooks/, whatever stage it
       # declares. Enumerating them here is how two of them came to run in CI and

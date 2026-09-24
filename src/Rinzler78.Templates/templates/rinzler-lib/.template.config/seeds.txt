@@ -16,6 +16,9 @@ AGENTS.md
 Directory.Build.props
 Directory.Build.targets
 Directory.Packages.props
+version.txt
+.release-please-manifest.json
+CHANGELOG.md
 .cspell/project.txt
 src/*
 tests/*

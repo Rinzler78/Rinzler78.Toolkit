@@ -86,6 +86,25 @@ layer fewer, and the filters are the runner's own.
 Coverage follows from that: a VSTest data collector has nothing to attach to, so
 `dotnet-coverage` wraps the process instead.
 
+## Publishing
+
+Publication is **keyless**. The release workflow asks GitHub for a short-lived OIDC
+token, nuget.org validates it against a trusted publishing policy naming this
+repository and `release.yml`, and returns an API key valid for one hour. No long-lived
+credential exists — not here, not in any sibling repository. A key copied into nineteen
+repositories is nineteen copies of one credential to rotate, and one of them will be
+forgotten.
+
+The policy is registered once per repository, on nuget.org under *Trusted Publishing*:
+repository owner `Rinzler78`, this repository, workflow file `release.yml`, scoped to
+the glob `Rinzler78.*` for both new packages and new versions. A key scoped to selected
+*existing* packages cannot push a new identifier, which is what every package here is.
+
+The version is Release Please's, computed from Conventional Commits and written to
+`version.txt`; `package.sh` reads it and nothing else does. `VERSION_SUFFIX` turns a
+build into a prerelease, which is how a continuous integration build cannot be mistaken
+for a release.
+
 ## Layout
 
     src/Rinzler78.Sample/          the code this repository publishes
