@@ -21,6 +21,11 @@ readonly NOT_HARNESS=(
   /README.md /CLAUDE.md /AGENTS.md '/*.sln' '/*.slnx'
   /Directory.Build.props /Directory.Build.targets /Directory.Packages.props
   '/.cspell/' /.cspell.json
+  # Release Please's state, and what it writes: the repository's own version and
+  # history. The mechanism is harness — release-please-config.json — the values are not.
+  /version.txt /.release-please-manifest.json /CHANGELOG.md
+  # Build output. Gitignored, but rsync does not read .gitignore.
+  /artifacts
   /scripts/hooks/build-contracts-enforced.sh
   /scripts/hooks/harness-regenerates.sh
   /scripts/_sync-template.sh
