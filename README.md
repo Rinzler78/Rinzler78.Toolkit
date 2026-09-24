@@ -108,9 +108,16 @@ repositories is nineteen copies of one credential to rotate, and one of them wil
 forgotten.
 
 The policy is registered once per repository, on nuget.org under *Trusted Publishing*:
-repository owner `Rinzler78`, this repository, workflow file `release.yml`, scoped to
-the glob `Rinzler78.*` for both new packages and new versions. A key scoped to selected
-*existing* packages cannot push a new identifier, which is what every package here is.
+repository owner `Rinzler78`, this repository, workflow file `release.yml`, permitted to
+push new packages as well as new versions — a scope limited to selected *existing*
+packages cannot push a new identifier, which is what every package here is.
+
+Its scope names **only the identifiers this repository publishes**, never the whole
+`Rinzler78.*` namespace. A policy is a grant to the workflow that matches it, so a
+namespace-wide scope would let a compromise of any one repository replace any package of
+the ecosystem. Where a single glob cannot express a repository's identifiers — this one
+publishes `Rinzler78.Build`, `Rinzler78.Templates` and `Rinzler78.Toolkit`, which share no
+narrower prefix — that is one policy per identifier, not one wider glob.
 
 The version is Release Please's, computed from Conventional Commits and written to
 `version.txt`; `package.sh` reads it and nothing else does. `VERSION_SUFFIX` turns a
