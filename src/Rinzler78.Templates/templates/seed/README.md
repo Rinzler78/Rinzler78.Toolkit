@@ -103,8 +103,24 @@ packages cannot push a new identifier, which is what every package here is.
 The environment is not optional. A policy matches the workflow's *file name*, never
 its branch, so without one any branch carrying a `release.yml` could mint a key — a
 feature branch rewriting that file to trigger on its own push would publish without
-review. The `release` environment admits deployments from `master` only, and the policy
-requires it.
+review. The policy requires the `release` environment, and the environment must admit
+deployments from `master` only.
+
+**That restriction is not generated with the repository.** Settings live in the forge,
+not in the tree, and — the trap — GitHub silently *creates* an environment the first
+time a job names it, with no protection at all. A repository that skipped this step
+would carry the whole mechanism and none of the protection. Before the first release:
+
+    REPO=<owner>/<repository>
+    gh api -X PUT "repos/$REPO/actions/permissions/workflow" \
+      -f default_workflow_permissions=read -F can_approve_pull_request_reviews=true
+    echo '{"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}' |
+      gh api -X PUT "repos/$REPO/environments/release" --input -
+    gh api -X POST "repos/$REPO/environments/release/deployment-branch-policies" \
+      -f name=master -f type=branch
+
+The first call lets Release Please open its release pull request, which no workflow can
+grant itself; the default token stays read-only.
 
 Its scope names **only the identifiers this repository publishes**, never the whole
 `Rinzler78.*` namespace. A policy is a grant to the workflow that matches it, so a

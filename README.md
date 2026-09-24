@@ -118,6 +118,11 @@ feature branch rewriting that file to trigger on its own push would publish with
 review. The `release` environment admits deployments from `master` only, and the policy
 requires it.
 
+That restriction is a repository setting, not a file: a repository generated from the
+template does not inherit it, and GitHub silently *creates* an environment the first
+time a job names it, with no protection at all. The generated README carries the three
+calls that provision it.
+
 Its scope names **only the identifiers this repository publishes**, never the whole
 `Rinzler78.*` namespace. A policy is a grant to the workflow that matches it, so a
 namespace-wide scope would let a compromise of any one repository replace any package of
