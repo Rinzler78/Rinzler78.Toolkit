@@ -6,4 +6,8 @@
   <ItemGroup>
     <!-- Versions live here, never in a specification. -->
   </ItemGroup>
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="xunit.v3" Version="4.0.1" />
+    <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
+  </ItemGroup>
 </Project>

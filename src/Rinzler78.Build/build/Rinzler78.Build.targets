@@ -74,11 +74,19 @@
 
   <!-- A layer name is only useful if it is checked: a typo would otherwise match no
        forbidden set and silently disable the rule above. Validation applies only
-       when the consumer has declared a vocabulary. -->
+       when the consumer has declared a vocabulary.
+
+       The vocabulary is split into items rather than searched as a string. A
+       substring search for ';Binding;' in 'Binding;Wrapper' finds nothing, so the
+       documented form refused every layer, the first and the last included; items
+       also drop the whitespace of a vocabulary written one layer per line. -->
   <Target Name="RinzlerValidateLayer" BeforeTargets="Build"
           Condition="'$(RinzlerKnownLayers)' != '' AND '$(RinzlerLayer)' != 'Unassigned'">
-    <Error Condition="!$(RinzlerKnownLayers.Contains(';$(RinzlerLayer);'))"
-           Text="RinzlerLayer '$(RinzlerLayer)' is not one of $(RinzlerKnownLayers)." />
+    <ItemGroup>
+      <_RinzlerKnownLayer Include="$(RinzlerKnownLayers)" />
+    </ItemGroup>
+    <Error Condition="'@(_RinzlerKnownLayer->AnyHaveMetadataValue('Identity', '$(RinzlerLayer)'))' != 'true'"
+           Text="RinzlerLayer '$(RinzlerLayer)' is not one of @(_RinzlerKnownLayer, ', ')." />
   </Target>
 
   <Target Name="RinzlerRequireLayer" BeforeTargets="Build"

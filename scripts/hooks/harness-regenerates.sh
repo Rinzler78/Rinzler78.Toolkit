@@ -54,7 +54,12 @@ is_seed() {
   return 1
 }
 
-run dotnet new install "$TEMPLATE_ROOT" --force
+# A private template registry, discarded with the scratch directory. Installing into
+# the user's registry left one entry per checkout this check ever ran from; once a
+# worktree was deleted its entry pointed nowhere, and the stale entries conflicted
+# with every later install of the same short names.
+hive="$scratch/hive"
+run dotnet new install "$TEMPLATE_ROOT" --force --debug:custom-hive "$hive"
 
 divergent=0
 for template in "${TEMPLATES[@]}"; do
@@ -69,7 +74,7 @@ for template in "${TEMPLATES[@]}"; do
   ((${#seeds[@]} > 0)) || fail "$template: the seed list is empty, every generated file would be compared"
 
   output="$scratch/$template"
-  run dotnet new "$template" --output "$output" --name "$name"
+  run dotnet new "$template" --output "$output" --name "$name" --debug:custom-hive "$hive"
 
   compared=0
   seeded=0

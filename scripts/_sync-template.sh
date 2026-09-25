@@ -17,6 +17,8 @@ readonly SHARED="$REPO_ROOT/src/Rinzler78.Templates/templates/shared"
 # repository's own checks, and everything that is not harness at all.
 readonly NOT_HARNESS=(
   /.git /.worktrees /graphify-out /openspec /docs /src
+  # The scaffold: every template seeds its own tests, named after the generated project.
+  /tests
   'obj/' 'bin/' .DS_Store
   /README.md /CLAUDE.md /AGENTS.md '/*.sln' '/*.slnx'
   /Directory.Build.props /Directory.Build.targets /Directory.Packages.props
