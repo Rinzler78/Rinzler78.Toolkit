@@ -56,8 +56,9 @@ internal sealed class ScratchConsumer : IDisposable
             RedirectStandardError = true,
         };
 
-        // The runner is itself an MSBuild child when started through `dotnet run`; its
-        // MSBuild variables would point the scratch build at the wrong SDK resolution.
+        // `dotnet run` exports settings of its own build into the runner —
+        // MSBuildLoadMicrosoftTargetsReadOnly, MSBUILDFAILONDRIVEENUMERATINGWILDCARD — and
+        // a scratch consumer must build as a consumer would, not as the host's child.
         foreach (var name in start.Environment.Keys.Where(key => key.StartsWith("MSBuild", StringComparison.OrdinalIgnoreCase)).ToList())
         {
             start.Environment.Remove(name);
