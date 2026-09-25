@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The rules of Rinzler78.Build are MSBuild, so they are tested the only way
+       MSBuild can be: a scratch consumer is written, built, and its verdict read.
+       The toolkit already imports its own props and targets through
+       Directory.Build.*, so this project needs no SDK element. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RinzlerCoverageContract>Exempt</RinzlerCoverageContract>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="AwesomeAssertions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- No assembly to reference: the edge exists so that a change under
+         src/Rinzler78.Build selects these tests, and so that the package builds first. -->
+    <ProjectReference Include="../../src/Rinzler78.Build/Rinzler78.Build.csproj"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

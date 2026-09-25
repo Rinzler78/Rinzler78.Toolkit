@@ -48,3 +48,4 @@ slnx
 xunit
 rinzler
 cobertura
+MSBUILDFAILONDRIVEENUMERATINGWILDCARD
