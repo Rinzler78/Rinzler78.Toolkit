@@ -45,6 +45,6 @@ public class LayerVocabularyTests
         var result = await consumer.BuildAsync();
 
         result.Succeeded.Should().BeFalse();
-        result.Output.Should().Contain("RinzlerLayer 'Bindings' is not one of");
+        result.Output.Should().Contain("RinzlerLayer 'Bindings' is not one of Binding, Wrapper.");
     }
 }
