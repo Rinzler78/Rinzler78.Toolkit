@@ -13,24 +13,28 @@ internal sealed class ScratchConsumer : IDisposable
 
     public ScratchConsumer(string properties)
     {
-        var sdk = Path.Combine(RepositoryRoot, "src", "Rinzler78.Build", "Sdk");
         Directory.CreateDirectory(_directory);
 
         // The checkout's SDK, not whatever the machine resolves outside it: the verdict
         // must be the one this repository's own build would reach.
         File.Copy(Path.Combine(RepositoryRoot, "global.json"), Path.Combine(_directory, "global.json"));
+        // The package's location reaches the project through the environment, never
+        // through its text: a checkout path is not XML-safe, and MSBuild would evaluate
+        // any `$(`, `@(` or `%` in it. An environment variable arrives as a literal.
         File.WriteAllText(Path.Combine(_directory, "Consumer.csproj"), $"""
             <Project Sdk="Microsoft.NET.Sdk">
-              <Import Project="{sdk}/Sdk.props" />
+              <Import Project="$({SdkVariable})/Sdk.props" />
               <PropertyGroup>
                 <TargetFramework>net10.0</TargetFramework>
                 <IsPackable>false</IsPackable>
                 {properties}
               </PropertyGroup>
-              <Import Project="{sdk}/Sdk.targets" />
+              <Import Project="$({SdkVariable})/Sdk.targets" />
             </Project>
             """);
     }
+
+    private const string SdkVariable = "RinzlerBuildSdkUnderTest";
 
     private static string RepositoryRoot
     {
@@ -63,6 +67,8 @@ internal sealed class ScratchConsumer : IDisposable
         {
             start.Environment.Remove(name);
         }
+
+        start.Environment[SdkVariable] = Path.Combine(RepositoryRoot, "src", "Rinzler78.Build", "Sdk");
 
         using var process = Process.Start(start)
             ?? throw new InvalidOperationException("dotnet could not be started.");
