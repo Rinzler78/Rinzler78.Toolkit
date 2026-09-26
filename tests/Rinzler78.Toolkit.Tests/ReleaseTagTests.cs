@@ -27,6 +27,27 @@ public sealed class ReleaseTagTests : IDisposable
         result.Output.Should().Contain("version=1.2.3").And.Contain("prerelease=false");
     }
 
+    [Fact]
+    public void The_workflow_receives_the_version_and_the_prerelease_flag_as_step_outputs()
+    {
+        _repository.Git("tag", "--annotate", "v1.2.3-rc.1", "--message", "v1.2.3-rc.1");
+
+        var result = _repository.Script("_release-tag.sh", "v1.2.3-rc.1");
+
+        result.Succeeded.Should().BeTrue(result.Error);
+        _repository.WorkflowOutput.Should().Be("version=1.2.3-rc.1\nprerelease=true\n");
+    }
+
+    [Fact]
+    public void A_refused_tag_gives_the_workflow_no_version()
+    {
+        _repository.Git("tag", "v1.2.3");
+
+        _ = _repository.Script("_release-tag.sh", "v1.2.3");
+
+        _repository.WorkflowOutput.Should().BeEmpty();
+    }
+
     [Theory]
     [InlineData("v1.2.3-alpha.1")]
     [InlineData("v1.2.3-beta.0")]

@@ -18,12 +18,13 @@
 #   admins create them.
 #
 # Required checks are the jobs of .github/workflows/ci.yml, which the harness owns and
-# keeps byte-identical in every repository.
+# keeps byte-identical in every repository. Each is bound to GitHub Actions, app 15368:
+# a check required by name alone is satisfied by any integration posting that name.
 # shellcheck source=scripts/_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
 repo=${1:?usage: _provision-forge.sh <owner>/<repository>}
-readonly CHECKS='[{"context":"verify"},{"context":"lint"}]'
+readonly CHECKS='[{"context":"verify","integration_id":15368},{"context":"lint","integration_id":15368}]'
 
 run gh api -X PUT "repos/$repo/actions/permissions/workflow" \
   -f default_workflow_permissions=read -F can_approve_pull_request_reviews=false >/dev/null

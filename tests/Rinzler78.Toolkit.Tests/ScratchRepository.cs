@@ -114,6 +114,12 @@ internal sealed class ScratchRepository : IDisposable
     public ScriptResult Script(string script, params string[] arguments) =>
         Run("bash", [Path.Combine(_root, "scripts", script), .. arguments]);
 
+    /// <summary>The file a script receives as GITHUB_OUTPUT, as a workflow step would.</summary>
+    public string WorkflowOutputPath => Path.Combine(_bin, "github-output");
+
+    public string WorkflowOutput =>
+        File.Exists(WorkflowOutputPath) ? File.ReadAllText(WorkflowOutputPath) : string.Empty;
+
     private ScriptResult Run(string file, IEnumerable<string> arguments)
     {
         var start = new ProcessStartInfo(file)
@@ -144,7 +150,7 @@ internal sealed class ScratchRepository : IDisposable
         start.Environment["GIT_COMMITTER_NAME"] = "Scratch";
         start.Environment["GIT_COMMITTER_EMAIL"] = "scratch@example.invalid";
         start.Environment["GITHUB_REPOSITORY"] = "owner/scratch";
-        start.Environment.Remove("GITHUB_OUTPUT");
+        start.Environment["GITHUB_OUTPUT"] = WorkflowOutputPath;
         start.Environment["PATH"] = $"{_bin}:{start.Environment["PATH"]}";
 
         using var process = Process.Start(start)

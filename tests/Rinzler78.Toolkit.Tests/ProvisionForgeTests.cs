@@ -74,8 +74,8 @@ public sealed class ProvisionForgeTests : IDisposable
             .And.Contain("\"required_linear_history\"")
             .And.Contain("\"required_signatures\"")
             .And.Contain("\"allowed_merge_methods\":[\"squash\"]")
-            .And.Contain("\"context\":\"verify\"")
-            .And.Contain("\"context\":\"lint\"");
+            .And.Contain("{\"context\":\"verify\",\"integration_id\":15368}")
+            .And.Contain("{\"context\":\"lint\",\"integration_id\":15368}");
     }
 
     [Fact]
