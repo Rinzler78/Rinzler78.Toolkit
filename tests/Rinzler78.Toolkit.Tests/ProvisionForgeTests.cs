@@ -56,6 +56,15 @@ public sealed class ProvisionForgeTests : IDisposable
     }
 
     [Fact]
+    public void A_deployment_policy_other_than_release_tags_is_removed()
+    {
+        var calls = Provision(policies: """{"branch_policies":[{"id":5,"name":"master","type":"branch"},{"id":7,"name":"v*","type":"tag"}]}""");
+
+        calls.Should().Contain("api -X DELETE repos/owner/repository/environments/release/deployment-branch-policies/5");
+        calls.Should().NotContain("deployment-branch-policies/7");
+    }
+
+    [Fact]
     public void Develop_takes_squashed_pull_requests_only_with_a_linear_signed_history()
     {
         var develop = RulesetNamed(Provision(), "develop");

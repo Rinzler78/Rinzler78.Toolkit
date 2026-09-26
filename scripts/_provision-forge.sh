@@ -29,8 +29,13 @@ run gh api -X PUT "repos/$repo/actions/permissions/workflow" \
 
 jq -nc '{deployment_branch_policy: {protected_branches: false, custom_branch_policies: true}}' |
   run gh api -X PUT "repos/$repo/environments/release" --input - >/dev/null
-if ! gh api "repos/$repo/environments/release/deployment-branch-policies" |
-  jq -e '.branch_policies[] | select(.name == "v*" and .type == "tag")' >/dev/null; then
+# Reconciled, not appended: a policy left from an earlier setup — `master`, before
+# releases became tags — would keep admitting what this script claims to exclude.
+policies=$(gh api "repos/$repo/environments/release/deployment-branch-policies")
+for stale in $(jq -r '.branch_policies[] | select(.name != "v*" or .type != "tag") | .id' <<<"$policies"); do
+  run gh api -X DELETE "repos/$repo/environments/release/deployment-branch-policies/$stale" >/dev/null
+done
+if ! jq -e '.branch_policies[] | select(.name == "v*" and .type == "tag")' <<<"$policies" >/dev/null; then
   run gh api -X POST "repos/$repo/environments/release/deployment-branch-policies" \
     -f 'name=v*' -f type=tag >/dev/null
 fi
