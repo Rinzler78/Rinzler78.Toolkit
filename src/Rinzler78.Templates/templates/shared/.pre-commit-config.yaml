@@ -51,9 +51,14 @@ repos:
         pass_filenames: true
         stages: [pre-commit]
 
+      # Whitespace and code style only. The analysers are enforced by the build,
+      # under TreatWarningsAsErrors, and only the compiler applies diagnostic
+      # suppressors: `dotnet format analyzers` reported CA1515 and CA2007 on test
+      # classes that xunit.analyzers suppresses, so the commit gate refused code
+      # the build accepted. Two verdicts on one rule is one too many.
       - id: dotnet-format
-        name: C# formatting and analysers
-        entry: bash -c 'dotnet format --verify-no-changes --verbosity minimal'
+        name: C# formatting and code style
+        entry: bash -c 'dotnet format whitespace --verify-no-changes --verbosity minimal && dotnet format style --verify-no-changes --verbosity minimal'
         language: system
         pass_filenames: false
         files: \.(cs|csproj|props|targets|sln)$

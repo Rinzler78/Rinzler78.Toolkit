@@ -54,7 +54,12 @@ is_seed() {
   return 1
 }
 
-run dotnet new install "$TEMPLATE_ROOT" --force
+# A private template registry, discarded with the scratch directory. Installing into
+# the user's registry left one entry per checkout this check ever ran from; once a
+# worktree was deleted its entry pointed nowhere, and the stale entries conflicted
+# with every later install of the same short names.
+hive="$scratch/hive"
+run dotnet new install "$TEMPLATE_ROOT" --force --debug:custom-hive "$hive"
 
 divergent=0
 for template in "${TEMPLATES[@]}"; do
@@ -69,7 +74,7 @@ for template in "${TEMPLATES[@]}"; do
   ((${#seeds[@]} > 0)) || fail "$template: the seed list is empty, every generated file would be compared"
 
   output="$scratch/$template"
-  run dotnet new "$template" --output "$output" --name "$name"
+  run dotnet new "$template" --output "$output" --name "$name" --debug:custom-hive "$hive"
 
   compared=0
   seeded=0
@@ -100,6 +105,20 @@ for template in "${TEMPLATES[@]}"; do
   # says "42 regenerate byte-identically" above a list of seven that do not is how a
   # reader learns to skim past the summary.
   log "$template: $((compared - diverged_here))/$compared harness file(s) identical, $diverged_here divergent, $seeded seed(s) left to the repository"
+
+  # Identical is not enough: a generated repository must also pass its own gates. Its
+  # spelling gate refused 52 words of the harness on the first commit, because the
+  # harness vocabulary lived in this repository's own dictionary, which is a seed. The
+  # generated repository's own hook runs, pinned by its own configuration and served
+  # from the environment pre-commit already caches for this one. A git hook exports
+  # GIT_DIR and GIT_INDEX_FILE, which would aim the scratch repository at ours.
+  if ! (cd "$output" &&
+    for variable in $(compgen -e | grep '^GIT_'); do unset "$variable"; done &&
+    git init --quiet && git add --all &&
+    pre-commit run cspell --all-files >/dev/null); then
+    printf '%s: the generated repository fails its own spelling gate\n' "$template"
+    divergent=$((divergent + 1))
+  fi
 done
 
-((divergent == 0)) || fail "$divergent harness file(s) diverge from the template — run ./scripts/_sync-template.sh if the repository is the side that changed"
+((divergent == 0)) || fail "$divergent failure(s): a harness file diverging from the template — run ./scripts/_sync-template.sh if the repository is the side that changed — or a generated repository failing its gates"

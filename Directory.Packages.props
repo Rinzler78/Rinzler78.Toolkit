@@ -6,4 +6,14 @@
   <ItemGroup>
     <!-- Versions live here, never in a specification. -->
   </ItemGroup>
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="xunit.v3" Version="4.0.1" />
+    <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
+  </ItemGroup>
+  <ItemGroup Label="Versioning">
+    <!-- The version comes from the tags and from nothing else: a tagged commit builds
+         the tag's version, and any other builds a prerelease counted from the last tag. Global,
+         because every packable project must agree with the tag the release checks. -->
+    <GlobalPackageReference Include="MinVer" Version="8.0.0" />
+  </ItemGroup>
 </Project>
