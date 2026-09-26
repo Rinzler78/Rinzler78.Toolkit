@@ -97,15 +97,20 @@ public sealed class ProvisionForgeTests : IDisposable
         tags.Should().Contain("\"target\":\"tag\"")
             .And.Contain("refs/tags/v*")
             .And.Contain("\"type\":\"update\"")
-            .And.Contain("\"type\":\"deletion\"");
+            .And.Contain("\"type\":\"deletion\"")
+            .And.Contain("\"bypass_actors\":[]")
+            .And.NotContain("\"type\":\"creation\"");
     }
 
     [Fact]
     public void Only_repository_admins_can_create_a_release_tag()
     {
-        var tags = RulesetNamed(Provision(), "release tags");
+        var creation = RulesetNamed(Provision(), "release tag creation");
 
-        tags.Should().Contain("\"type\":\"creation\"")
+        creation.Should().Contain("refs/tags/v*")
+            .And.Contain("\"type\":\"creation\"")
+            .And.NotContain("\"type\":\"update\"")
+            .And.NotContain("\"type\":\"deletion\"")
             .And.Contain("\"bypass_actors\":[{\"actor_id\":5,\"actor_type\":\"RepositoryRole\",\"bypass_mode\":\"always\"}]");
     }
 

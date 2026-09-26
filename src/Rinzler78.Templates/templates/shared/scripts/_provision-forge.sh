@@ -58,15 +58,24 @@ branch_ruleset() {
     }'
 }
 
-# Only repository admins create a release tag: the tag check verifies that a tag is
-# signed, not who signed it, so a signature alone must not be enough to publish.
-# RepositoryRole 5 is the admin role.
-tag_ruleset() {
+# Two rulesets, because a bypass applies to a whole ruleset. Release tags can be
+# neither moved nor deleted, by anyone: no bypass. Only repository admins create one —
+# the tag check verifies that a tag is signed, not who signed it, so a signature alone
+# must not be enough to publish. RepositoryRole 5 is the admin role.
+tag_immutability_ruleset() {
   jq -nc '{
-    name: "release tags", target: "tag", enforcement: "active",
+    name: "release tags", target: "tag", enforcement: "active", bypass_actors: [],
+    conditions: {ref_name: {include: ["refs/tags/v*"], exclude: []}},
+    rules: [{type: "update"}, {type: "deletion"}]
+  }'
+}
+
+tag_creation_ruleset() {
+  jq -nc '{
+    name: "release tag creation", target: "tag", enforcement: "active",
     bypass_actors: [{actor_id: 5, actor_type: "RepositoryRole", bypass_mode: "always"}],
     conditions: {ref_name: {include: ["refs/tags/v*"], exclude: []}},
-    rules: [{type: "creation"}, {type: "update"}, {type: "deletion"}]
+    rules: [{type: "creation"}]
   }'
 }
 
@@ -84,6 +93,7 @@ apply() {
 
 apply "$(branch_ruleset develop squash true)"
 apply "$(branch_ruleset master merge false)"
-apply "$(tag_ruleset)"
+apply "$(tag_immutability_ruleset)"
+apply "$(tag_creation_ruleset)"
 
 log "forge settings applied to $repo"
