@@ -115,7 +115,11 @@ internal sealed class ScratchRepository : IDisposable
     /// Writes a package under artifacts/ named <paramref name="fileName"/> whose manifest
     /// declares <paramref name="manifestVersion"/> — the two can disagree on purpose.
     /// </summary>
-    public void Package(string fileName, string manifestVersion)
+    public void Package(string fileName, string manifestVersion) =>
+        PackageWithVersionElement(fileName, $"<version>{manifestVersion}</version>");
+
+    /// <summary>Writes a package whose manifest carries <paramref name="versionElement"/> verbatim.</summary>
+    public void PackageWithVersionElement(string fileName, string versionElement)
     {
         var artifacts = Path.Combine(_root, "artifacts");
         Directory.CreateDirectory(artifacts);
@@ -127,7 +131,7 @@ internal sealed class ScratchRepository : IDisposable
             <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
               <metadata>
                 <id>Scratch</id>
-                <version>{manifestVersion}</version>
+                {versionElement}
               </metadata>
             </package>
             """);

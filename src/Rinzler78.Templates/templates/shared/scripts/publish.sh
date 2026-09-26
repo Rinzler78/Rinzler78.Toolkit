@@ -31,7 +31,10 @@ packages=("$REPO_ROOT"/artifacts/*.nupkg)
 
 if [[ -n "$expected" ]]; then
   for package in "${packages[@]}"; do
-    declared=$(unzip -p "$package" '*.nuspec' | sed -n 's:.*<version>\(.*\)</version>.*:\1:p' | head -1)
+    # XML, not lines: the element may be indented or split, so the manifest is
+    # flattened before the version element is read.
+    declared=$(unzip -p "$package" '*.nuspec' | tr -d '\r\n' |
+      sed -n 's:.*<version>[[:space:]]*\([^<[:space:]]*\)[[:space:]]*</version>.*:\1:p')
     [[ "$declared" == "$expected" ]] ||
       fail "$(basename "$package") declares version ${declared:-none}, not $expected — the tag and the packages disagree"
   done

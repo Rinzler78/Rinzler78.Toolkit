@@ -35,6 +35,16 @@ public sealed class PublishTests : IDisposable
     }
 
     [Fact]
+    public void A_version_element_formatted_over_several_lines_is_read()
+    {
+        _repository.PackageWithVersionElement("Scratch.1.2.3.nupkg", "<version>\n      1.2.3\n    </version>");
+
+        var result = Verify("1.2.3");
+
+        result.Succeeded.Should().BeTrue(result.Error);
+    }
+
+    [Fact]
     public void Verification_needs_no_credential()
     {
         _repository.Package("Scratch.1.2.3.nupkg", "1.2.3");
