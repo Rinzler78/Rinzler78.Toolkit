@@ -7,4 +7,10 @@
     <RinzlerLayer>Unassigned</RinzlerLayer>
   </PropertyGroup>
 
+  <!-- Release tags are vMAJOR.MINOR.PATCH: scripts/_release-tag.sh refuses any other
+       form, and MinVer must read the same one. -->
+  <PropertyGroup>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+  </PropertyGroup>
+
 </Project>

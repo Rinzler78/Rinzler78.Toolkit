@@ -98,6 +98,24 @@ layer fewer, and the filters are the runner's own.
 Coverage follows from that: a VSTest data collector has nothing to attach to, so
 `dotnet-coverage` wraps the process instead.
 
+### On releasing
+
+A release is a signed, annotated tag pushed on a commit of `master`; `release.yml`
+does the rest, and nothing else writes a version. `master` only receives promotions
+from `develop` — merge commits, so that the next promotion shows only what is new —
+and its pull request is where the costly checks run.
+
+Release Please owned releases up to 0.1.0, and was removed because a bot-created tag
+cannot start a workflow: events raised with `GITHUB_TOKEN` start none, except
+`workflow_dispatch` and `repository_dispatch`, and the alternative is a long-lived
+token. Its history is frozen in `CHANGELOG.md`; later notes are the GitHub releases.
+
+`scripts/_release-tag.sh` refuses a tag outside `vMAJOR.MINOR.PATCH[-(alpha|beta|rc).N]`,
+a lightweight tag, a tag GitHub does not verify as signed, and a tag on a commit
+`master` does not contain. The labels are the three the NuGet documentation defines,
+numbered after a dot so that `rc.10` sorts after `rc.2`. MinVer computes the version
+from the tags alone, in an IDE as in CI.
+
 ### On publishing
 
 Publication is **keyless**. The release workflow asks GitHub for a short-lived OIDC
@@ -109,31 +127,25 @@ forgotten.
 
 The policy is registered once per repository, on nuget.org under *Trusted Publishing*:
 repository owner `Rinzler78`, this repository, workflow file `release.yml`, environment
-`release`, permitted to push new packages as well as new versions — a scope limited to selected *existing*
-packages cannot push a new identifier, which is what every package here is.
+`release`, permitted to push new packages as well as new versions — a scope limited to
+selected *existing* packages cannot push a new identifier, which is what every package
+here is at its first release.
 
 The environment is not optional. A policy matches the workflow's *file name*, never
-its branch, so without one any branch carrying a `release.yml` could mint a key — a
-feature branch rewriting that file to trigger on its own push would publish without
-review. The `release` environment admits deployments from `master` only, and the policy
-requires it.
+its ref, so without one any ref carrying a `release.yml` could mint a key. The
+`release` environment admits tags `v*` only, and tags `v*` can be neither moved nor
+deleted.
 
-That restriction is a repository setting, not a file: a repository generated from the
-template does not inherit it, and GitHub silently *creates* an environment the first
-time a job names it, with no protection at all. The generated README carries the three
-calls that provision it.
+Those are forge settings, not files: a repository generated from the template inherits
+none of them, and GitHub silently *creates* an environment the first time a job names
+it, with no protection at all. `scripts/_provision-forge.sh` applies them, idempotently.
 
 Its scope names **only the identifiers this repository publishes**, never the whole
 `Rinzler78.*` namespace. A policy is a grant to the workflow that matches it, so a
 namespace-wide scope would let a compromise of any one repository replace any package of
 the ecosystem. Where a single glob cannot express a repository's identifiers — this one
-publishes `Rinzler78.Build`, `Rinzler78.Templates` and `Rinzler78.Toolkit`, which share no
-narrower prefix — that is one policy per identifier, not one wider glob.
-
-The version is Release Please's, computed from Conventional Commits and written to
-`version.txt`; `package.sh` reads it and nothing else does. `VERSION_SUFFIX` turns a
-build into a prerelease, which is how a continuous integration build cannot be mistaken
-for a release.
+publishes `Rinzler78.Build` and `Rinzler78.Templates`, which share no narrower prefix —
+that is one identifier per line, not one wider glob.
 
 ### On measuring
 

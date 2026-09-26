@@ -1,5 +1,10 @@
 name: release
 
+# A release is a tag. We push a signed, annotated tag on a commit of `master` when we
+# are certain; this workflow does the rest. No bot writes a version, a changelog or a
+# commit: the tag is the version, MinVer reads it, and the release notes are
+# GitHub's, generated from the pull requests between two tags.
+#
 # Publication is keyless. The workflow asks GitHub for a short-lived OIDC token,
 # nuget.org validates it against a trusted publishing policy naming this repository
 # and this file, and hands back an API key valid for one hour. Nothing long-lived is
@@ -9,14 +14,11 @@ name: release
 #
 # The policy is registered once per repository on nuget.org, under Trusted Publishing:
 #   Repository Owner: Rinzler78 · Repository: <this repository> · Workflow: release.yml
-#   Environment: release — restricted, in the repository settings, to `master`
-#
-# Release Please owns the version. It is computed from Conventional Commits, never
-# edited by hand, and there is no second versioning mechanism.
+#   Environment: release — restricted, in the repository settings, to tags `v*`
 
 on:
   push:
-    branches: [master]
+    tags: ['v*']
 
 permissions:
   contents: read
@@ -26,50 +28,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release-please:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    outputs:
-      released: ${{ steps.release.outputs.releases_created }}
-      tag: ${{ steps.release.outputs.tag_name }}
-      # The tag carries a leading `v`; the packages do not. Two outputs rather than one
-      # string sliced at the point of use.
-      version: ${{ steps.release.outputs.version }}
-    steps:
-      - uses: googleapis/release-please-action@v4
-        id: release
-        with:
-          # The branch releases are cut from, stated rather than inferred. Release Please
-          # defaults to the repository's *default* branch — `develop` here — not to the
-          # branch that triggered the run, so the first run built a release branch off
-          # `develop` while this workflow only ever triggers on `master`.
-          target-branch: master
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-
   publish:
-    needs: release-please
-    if: needs.release-please.outputs.released == 'true'
     runs-on: ubuntu-latest
-    # The binding to `master` lives here, not in the trigger above. A nuget.org policy
-    # matches the owner, the repository, the workflow *file name* and the environment —
-    # never the branch — so without an environment any branch carrying a file named
-    # release.yml could mint a key, and a feature branch rewriting that file to trigger
-    # on its own push would publish without review. The `release` environment only
-    # admits deployments from `master`, and the policy requires it.
+    # A nuget.org policy matches the owner, the repository, the workflow *file name*
+    # and the environment — never the ref. Without an environment, any ref carrying a
+    # file named release.yml could mint a key. The `release` environment only admits
+    # deployments from tags `v*`, and tags `v*` can be neither moved nor deleted.
     environment: release
     permissions:
-      # The only permission publication needs: the token is exchanged with nuget.org,
-      # and nothing in this job may write to the repository.
+      # The token is exchanged with nuget.org; contents: write creates the GitHub
+      # release, after the packages are pushed.
       id-token: write
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.release-please.outputs.tag }}
+          # MinVer reads the version from the tags, and the tag check needs master.
           fetch-depth: 0
+
+      # Every refusal is cheaper before the build than after the push: the form of the
+      # name, the annotation, the signature GitHub verifies, and that master contains
+      # the commit.
+      - name: Tag check
+        id: tag
+        run: ./scripts/_release-tag.sh "$GITHUB_REF_NAME"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -78,8 +62,8 @@ jobs:
       - uses: jdx/mise-action@v2
       - run: pipx install pre-commit
 
-      # Nothing costly is discovered at release time — but nothing is published from a
-      # tree that was never verified either.
+      # Nothing costly is discovered at release time — the pull request into master
+      # ran it — but nothing is published from a tree that was never verified either.
       - name: Restore, locked
         run: dotnet restore --locked-mode
 
@@ -112,8 +96,15 @@ jobs:
         run: ./scripts/publish.sh
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
-          # The tag the release created, without its `v`. publish.sh refuses to push a
-          # package that does not carry it: a version pushed to nuget.org cannot be
-          # replaced, so the agreement between the tag, version.txt and the artefacts is
-          # checked before the push rather than discovered after it.
-          EXPECTED_VERSION: ${{ needs.release-please.outputs.version }}
+          # The version the tag names. publish.sh refuses a package that does not carry
+          # it: a version pushed to nuget.org cannot be replaced, so the agreement
+          # between the tag and the artefacts MinVer versioned is checked before the
+          # push rather than discovered after it.
+          EXPECTED_VERSION: ${{ steps.tag.outputs.version }}
+
+      - name: GitHub release
+        run: >-
+          gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
+          ${{ steps.tag.outputs.prerelease == 'true' && '--prerelease' || '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}

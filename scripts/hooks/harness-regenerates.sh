@@ -61,6 +61,9 @@ is_seed() {
 hive="$scratch/hive"
 run dotnet new install "$TEMPLATE_ROOT" --force --debug:custom-hive "$hive"
 
+cspell_version=$(grep -o "cspell@[0-9.]*" "$REPO_ROOT/.pre-commit-config.yaml" | head -1 | cut -d@ -f2)
+[[ -n "$cspell_version" ]] || fail 'no cspell version pinned in .pre-commit-config.yaml'
+
 divergent=0
 for template in "${TEMPLATES[@]}"; do
   seeds_file="$TEMPLATE_ROOT/templates/$template/.template.config/seeds.txt"
@@ -105,6 +108,16 @@ for template in "${TEMPLATES[@]}"; do
   # says "42 regenerate byte-identically" above a list of seven that do not is how a
   # reader learns to skim past the summary.
   log "$template: $((compared - diverged_here))/$compared harness file(s) identical, $diverged_here divergent, $seeded seed(s) left to the repository"
+
+  # Identical is not enough: a generated repository must also pass its own gates. Its
+  # spelling gate refused 52 words of the harness on the first commit, because the
+  # harness vocabulary lived in this repository's own dictionary, which is a seed. The
+  # cspell version is the one the commit gate pins, read rather than restated.
+  if ! (cd "$output" && find . -type f -print0 |
+    xargs -0 npx --yes "cspell@$cspell_version" lint --no-progress --no-summary); then
+    printf '%s: the generated repository fails its own spelling gate\n' "$template"
+    divergent=$((divergent + 1))
+  fi
 done
 
-((divergent == 0)) || fail "$divergent harness file(s) diverge from the template — run ./scripts/_sync-template.sh if the repository is the side that changed"
+((divergent == 0)) || fail "$divergent failure(s): a harness file diverging from the template — run ./scripts/_sync-template.sh if the repository is the side that changed — or a generated repository failing its gates"

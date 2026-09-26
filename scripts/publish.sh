@@ -3,8 +3,8 @@
 #
 # EXPECTED_VERSION, when set, is the version the release claims. Every artefact must
 # carry it, or nothing is pushed: a push is irreversible — nuget.org does not allow a
-# version to be replaced — so the one moment to check that the tag, the version file and
-# the packages agree is *before* the push, not in a post-mortem.
+# version to be replaced — so the one moment to check that the tag and the packages
+# agree is *before* the push, not in a post-mortem.
 # shellcheck source=scripts/_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
@@ -15,7 +15,7 @@ packages=("$REPO_ROOT"/artifacts/*.nupkg)
 if [[ -n "${EXPECTED_VERSION:-}" ]]; then
   for package in "${packages[@]}"; do
     name=$(basename "$package" .nupkg)
-    [[ "$name" == *".$EXPECTED_VERSION" ]] || fail "$name is not version $EXPECTED_VERSION — the release, the version file and the packages disagree"
+    [[ "$name" == *".$EXPECTED_VERSION" ]] || fail "$name is not version $EXPECTED_VERSION — the tag and the packages disagree"
   done
   log "${#packages[@]} package(s), all at version $EXPECTED_VERSION"
 fi

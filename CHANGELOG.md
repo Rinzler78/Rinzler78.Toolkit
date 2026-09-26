@@ -1,5 +1,8 @@
 # Changelog
 
+Frozen at 0.1.0, the last release Release Please made. Later release notes are the
+[GitHub releases](https://github.com/Rinzler78/Rinzler78.Toolkit/releases).
+
 ## 0.1.0 (2026-09-24)
 
 
