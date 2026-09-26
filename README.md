@@ -134,7 +134,7 @@ here is at its first release.
 The environment is not optional. A policy matches the workflow's *file name*, never
 its ref, so without one any ref carrying a `release.yml` could mint a key. The
 `release` environment admits tags `v*` only, and tags `v*` can be neither moved nor
-deleted.
+deleted, and only repository admins create them.
 
 Those are forge settings, not files: a repository generated from the template inherits
 none of them, and GitHub silently *creates* an environment the first time a job names

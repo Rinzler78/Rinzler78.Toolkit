@@ -101,6 +101,15 @@ public sealed class ProvisionForgeTests : IDisposable
     }
 
     [Fact]
+    public void Only_repository_admins_can_create_a_release_tag()
+    {
+        var tags = RulesetNamed(Provision(), "release tags");
+
+        tags.Should().Contain("\"type\":\"creation\"")
+            .And.Contain("\"bypass_actors\":[{\"actor_id\":5,\"actor_type\":\"RepositoryRole\",\"bypass_mode\":\"always\"}]");
+    }
+
+    [Fact]
     public void An_existing_ruleset_is_replaced_in_place_rather_than_duplicated()
     {
         var calls = Provision(rulesets: """[{"id":42,"name":"develop"}]""");

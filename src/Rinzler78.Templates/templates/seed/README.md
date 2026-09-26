@@ -140,7 +140,8 @@ names it, with no protection at all. Before the first pull request:
 It is idempotent, and applies the read-only workflow token, the `release` environment
 restricted to tags `v*`, the rulesets of `develop` (squash, linear, signed) and
 `master` (merge commits, signed), both requiring a pull request and the `verify` and
-`lint` checks, and the ruleset that makes tags `v*` immutable. Commits must be signed:
+`lint` checks, and the ruleset that makes tags `v*` immutable and creatable by
+repository admins only — the tag check verifies a signature, not who signed. Commits must be signed:
 configure signing in the clone before the first commit.
 
 ## Layout

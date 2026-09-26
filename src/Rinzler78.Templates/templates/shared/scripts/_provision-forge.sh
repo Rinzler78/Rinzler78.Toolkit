@@ -14,7 +14,8 @@
 # - master takes merge commits only: a promotion keeps develop's history, so the next
 #   promotion shows only what is new. Signed, but not linear, by construction.
 # - Tags `v*` can be neither moved nor deleted: nuget.org never replaces a version, so a
-#   moved tag would name code other than the package it published.
+#   moved tag would name code other than the package it published. Only repository
+#   admins create them.
 #
 # Required checks are the jobs of .github/workflows/ci.yml, which the harness owns and
 # keeps byte-identical in every repository.
@@ -57,11 +58,15 @@ branch_ruleset() {
     }'
 }
 
+# Only repository admins create a release tag: the tag check verifies that a tag is
+# signed, not who signed it, so a signature alone must not be enough to publish.
+# RepositoryRole 5 is the admin role.
 tag_ruleset() {
   jq -nc '{
-    name: "release tags", target: "tag", enforcement: "active", bypass_actors: [],
+    name: "release tags", target: "tag", enforcement: "active",
+    bypass_actors: [{actor_id: 5, actor_type: "RepositoryRole", bypass_mode: "always"}],
     conditions: {ref_name: {include: ["refs/tags/v*"], exclude: []}},
-    rules: [{type: "update"}, {type: "deletion"}]
+    rules: [{type: "creation"}, {type: "update"}, {type: "deletion"}]
   }'
 }
 
