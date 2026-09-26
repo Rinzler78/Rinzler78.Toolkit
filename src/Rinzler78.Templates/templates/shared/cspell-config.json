@@ -11,12 +11,17 @@
   ],
   "dictionaryDefinitions": [
     {
+      "name": "harness",
+      "path": ".cspell/harness.txt"
+    },
+    {
       "name": "project",
       "path": ".cspell/project.txt",
       "addWords": true
     }
   ],
   "dictionaries": [
+    "harness",
     "project"
   ],
   "ignoreRegExpList": [

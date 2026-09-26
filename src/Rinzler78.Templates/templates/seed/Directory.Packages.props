@@ -13,4 +13,10 @@
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.17" />
   </ItemGroup>
+  <ItemGroup Label="Versioning">
+    <!-- The version comes from the tags and from nothing else: a tagged commit builds
+         the tag's version, any other the next patch as an alpha prerelease. Global,
+         because every packable project must agree with the tag the release checks. -->
+    <GlobalPackageReference Include="MinVer" Version="8.0.0" />
+  </ItemGroup>
 </Project>

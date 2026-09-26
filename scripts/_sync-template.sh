@@ -22,10 +22,11 @@ readonly NOT_HARNESS=(
   'obj/' 'bin/' .DS_Store
   /README.md /CLAUDE.md /AGENTS.md '/*.sln' '/*.slnx'
   /Directory.Build.props /Directory.Build.targets /Directory.Packages.props
-  '/.cspell/' /.cspell.json
-  # Release Please's state, and what it writes: the repository's own version and
-  # history. The mechanism is harness — release-please-config.json — the values are not.
-  /version.txt /.release-please-manifest.json /CHANGELOG.md
+  # The repository's own words; the harness vocabulary, .cspell/harness.txt, ships.
+  /.cspell/project.txt /.cspell.json
+  # The history written while Release Please owned releases, frozen at 0.1.0. Later
+  # notes live in the GitHub releases; the file belongs to this repository only.
+  /CHANGELOG.md
   # Build output. Gitignored, but rsync does not read .gitignore.
   /artifacts
   /scripts/hooks/build-contracts-enforced.sh

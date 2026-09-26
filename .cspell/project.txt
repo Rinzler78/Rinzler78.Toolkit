@@ -1,51 +1,16 @@
-# Git and tooling vocabulary
-gitlink
-superproject
-worktree
-worktrees
-shellcheck
-shfmt
-pipx
-nupkg
-snupkg
-nuget
-openspec
-Renovate
+# Words this repository uses that no dictionary knows; the harness vocabulary is in
+# harness.txt, which the template ships. One per line.
 # Ecosystem vocabulary
-Rinzler
 maccatalyst
 monoandroid
-netstandard
 xcframework
 Xamarin
 xharness
-# Agent vocabulary
-HITL
-# Shell and tooling tokens
-Eeuo
-pipefail
-nologo
-NOLOGO
-OPTOUT
-fromdateiso
-# Proper nouns
-Leclere
 # MSBuild vocabulary
 Trimmable
 Aot
 xamarinios
-graphify
-docfx
-# POSIX and tooling tokens
-getconf
-NPROCESSORS
-ONLN
-msbuild
-# Tooling tokens earned in this change
-ACMR
-notrait
-slnx
-xunit
-rinzler
-cobertura
 MSBUILDFAILONDRIVEENUMERATINGWILDCARD
+# Shell tokens in this repository's tests
+esac
+NOSYSTEM
