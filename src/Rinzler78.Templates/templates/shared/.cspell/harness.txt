@@ -1,0 +1,39 @@
+# Words the harness itself uses: its scripts, hooks, workflows and configuration.
+# Owned by the template and identical in every repository, so that a freshly
+# generated repository passes its own spelling gate. Repository words go in
+# project.txt.
+ACMR
+argjson
+cobertura
+docfx
+Eeuo
+fromdateiso
+getconf
+gitlink
+graphify
+HITL
+Leclere
+msbuild
+netstandard
+NOLOGO
+nologo
+notrait
+NPROCESSORS
+nuget
+nupkg
+ONLN
+openspec
+OPTOUT
+pipefail
+pipx
+Renovate
+rinzler
+Rinzler
+shellcheck
+shfmt
+slnx
+snupkg
+superproject
+worktree
+worktrees
+xunit
