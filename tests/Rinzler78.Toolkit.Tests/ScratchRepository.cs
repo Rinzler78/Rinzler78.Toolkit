@@ -111,6 +111,32 @@ internal sealed class ScratchRepository : IDisposable
     public string GitHubCalls =>
         File.Exists(Path.Combine(_bin, "calls.log")) ? File.ReadAllText(Path.Combine(_bin, "calls.log")) : string.Empty;
 
+    /// <summary>
+    /// Writes a package under artifacts/ named <paramref name="fileName"/> whose manifest
+    /// declares <paramref name="manifestVersion"/> — the two can disagree on purpose.
+    /// </summary>
+    public void Package(string fileName, string manifestVersion) =>
+        PackageWithVersionElement(fileName, $"<version>{manifestVersion}</version>");
+
+    /// <summary>Writes a package whose manifest carries <paramref name="versionElement"/> verbatim.</summary>
+    public void PackageWithVersionElement(string fileName, string versionElement)
+    {
+        var artifacts = Path.Combine(_root, "artifacts");
+        Directory.CreateDirectory(artifacts);
+        using var archive = System.IO.Compression.ZipFile.Open(
+            Path.Combine(artifacts, fileName), System.IO.Compression.ZipArchiveMode.Create);
+        using var writer = new StreamWriter(archive.CreateEntry("Scratch.nuspec").Open());
+        writer.Write($"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+              <metadata>
+                <id>Scratch</id>
+                {versionElement}
+              </metadata>
+            </package>
+            """);
+    }
+
     public ScriptResult Script(string script, params string[] arguments) =>
         Run("bash", [Path.Combine(_root, "scripts", script), .. arguments]);
 

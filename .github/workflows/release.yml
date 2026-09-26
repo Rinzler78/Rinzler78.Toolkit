@@ -83,6 +83,12 @@ jobs:
       - name: Package
         run: ./scripts/package.sh
 
+      # Every package must declare the tag's version in its manifest — what nuget.org
+      # reads — and the check runs before the credential is requested: a mismatch never
+      # gets as far as a key.
+      - name: Package versions
+        run: ./scripts/publish.sh --verify --expect "${{ steps.tag.outputs.version }}"
+
       # The token is exchanged immediately before the push: the key it returns lives
       # one hour, and a key requested at the top of a job that then builds for fifty
       # minutes is a key that expires between the pack and the push.
@@ -92,15 +98,12 @@ jobs:
         with:
           user: Rinzler78
 
+      # The same check again, on the same files, immediately before the push: a version
+      # pushed to nuget.org cannot be replaced.
       - name: Publish
-        run: ./scripts/publish.sh
+        run: ./scripts/publish.sh --expect "${{ steps.tag.outputs.version }}"
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
-          # The version the tag names. publish.sh refuses a package that does not carry
-          # it: a version pushed to nuget.org cannot be replaced, so the agreement
-          # between the tag and the artefacts MinVer versioned is checked before the
-          # push rather than discovered after it.
-          EXPECTED_VERSION: ${{ steps.tag.outputs.version }}
 
       - name: GitHub release
         run: >-
