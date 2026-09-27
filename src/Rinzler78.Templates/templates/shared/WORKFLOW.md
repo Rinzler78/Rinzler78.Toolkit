@@ -66,14 +66,18 @@ it is, carry it to the end without asking again:
    commits:
 
        git fetch origin --tags
-       previous=$(git describe --tags --abbrev=0 origin/master)
-       { echo v0.2.0; echo; git log --no-merges --format='- %s' "$previous..origin/master"; } |
+       # Empty before a repository's first release: the log then covers all history.
+       previous=$(git describe --tags --abbrev=0 origin/master 2>/dev/null || true)
+       { echo v0.2.0; echo; git log --no-merges --format='- %s' "${previous:+$previous..}origin/master"; } |
          git tag --sign --annotate v0.2.0 --file - origin/master
        git push origin v0.2.0
 
    For a version derived from the public API, the evidence is the surface diff:
    replace the `git log` line with
-   `git diff "$previous" origin/master -- '*PublicAPI.Unshipped.txt'`.
+   `git diff "${previous:-$(git hash-object -t tree /dev/null)}" origin/master -- '*PublicAPI.Unshipped.txt'`
+   — against the empty tree before the first release. For 1.0.0 after a 0.x version,
+   add the path of the ADR that declares the public surface stable: without it, 1.0.0
+   is refused.
 
    The push publishes, directly and irreversibly. `release.yml` refuses a tag outside
    `vMAJOR.MINOR.PATCH[-(alpha|beta|rc).N]`, a lightweight or unverified tag, and a
