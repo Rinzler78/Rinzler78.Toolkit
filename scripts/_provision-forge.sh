@@ -11,8 +11,9 @@
 #   policy matches the workflow's file name and this environment, never the ref, and
 #   GitHub silently creates an unprotected environment the first time a job names one.
 # - develop takes squashed pull requests, with a linear, signed history.
-# - Copilot reviews every push to a pull request into either branch, so that no agent
-#   has to remember to ask: WORKFLOW.md's review loop ends only when it finds nothing.
+# - Copilot reviews every push to a pull request into either branch, so that the review
+#   never depends on someone remembering to request it: WORKFLOW.md's review loop ends
+#   only when it finds nothing.
 # - master takes merge commits only: a promotion keeps develop's history, so the next
 #   promotion shows only what is new. Signed, but not linear, by construction.
 # - Tags `v*` can be neither moved nor deleted: nuget.org never replaces a version, so a
