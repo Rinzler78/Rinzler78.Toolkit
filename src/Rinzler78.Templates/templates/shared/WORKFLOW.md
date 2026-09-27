@@ -61,10 +61,12 @@ it is, carry it to the end without asking again:
    never a consequence. Pre-releases are `-alpha.N`, `-beta.N` or `-rc.N`.
 2. **Promote**: a pull request from `develop` to `master`, looped to green like any
    other, merged with a **merge commit** — never squashed, never rebased.
-3. **Tag the merge commit**, signed and annotated, and push the tag:
+3. **Tag the merge commit**, signed and annotated, its message the version followed by
+   the evidence the proposal cited, and push the tag:
 
-       git fetch origin
-       git tag --sign --annotate v0.2.0 --message v0.2.0 origin/master
+       git fetch origin --tags
+       { echo v0.2.0; echo; git log --no-merges --format='- %s' v0.1.1..origin/master; } |
+         git tag --sign --annotate v0.2.0 --file - origin/master
        git push origin v0.2.0
 
    The push publishes, directly and irreversibly. `release.yml` refuses a tag outside
