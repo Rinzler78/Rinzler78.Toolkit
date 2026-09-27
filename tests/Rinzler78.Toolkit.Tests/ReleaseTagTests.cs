@@ -9,17 +9,25 @@ public sealed class ReleaseTagTests : IDisposable
 
     public ReleaseTagTests()
     {
+        _repository.AddOrigin();
         _repository.Commit("initial");
-        _repository.Git("update-ref", "refs/remotes/origin/master", "HEAD");
+        _repository.Git("push", "--quiet", "origin", "HEAD:refs/heads/master");
+        _repository.Git("fetch", "--quiet", "origin");
         _repository.GitHubVerifies(verified: true, reason: "valid");
     }
 
     public void Dispose() => _repository.Dispose();
 
+    private void AnnotatedTag(string tag)
+    {
+        _repository.Git("tag", "--annotate", tag, "--message", tag);
+        _repository.Git("push", "--quiet", "origin", $"refs/tags/{tag}");
+    }
+
     [Fact]
     public void A_signed_annotated_release_tag_on_master_publishes_its_version()
     {
-        _repository.Git("tag", "--annotate", "v1.2.3", "--message", "v1.2.3");
+        AnnotatedTag("v1.2.3");
 
         var result = _repository.Script("_release-tag.sh", "v1.2.3");
 
@@ -30,7 +38,7 @@ public sealed class ReleaseTagTests : IDisposable
     [Fact]
     public void The_workflow_receives_the_version_and_the_prerelease_flag_as_step_outputs()
     {
-        _repository.Git("tag", "--annotate", "v1.2.3-rc.1", "--message", "v1.2.3-rc.1");
+        AnnotatedTag("v1.2.3-rc.1");
 
         var result = _repository.Script("_release-tag.sh", "v1.2.3-rc.1");
 
@@ -42,10 +50,36 @@ public sealed class ReleaseTagTests : IDisposable
     public void A_refused_tag_gives_the_workflow_no_version()
     {
         _repository.Git("tag", "v1.2.3");
+        _repository.Git("push", "--quiet", "origin", "refs/tags/v1.2.3");
 
         _ = _repository.Script("_release-tag.sh", "v1.2.3");
 
         _repository.WorkflowOutput.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void A_tag_the_checkout_rewrote_as_lightweight_is_read_from_origin()
+    {
+        AnnotatedTag("v1.2.3");
+
+        // What actions/checkout does on a tag push: its second fetch force-updates the
+        // tag to the commit, so the local ref is lightweight while origin's is not.
+        _repository.Git("tag", "--force", "v1.2.3", "v1.2.3^{commit}");
+
+        var result = _repository.Script("_release-tag.sh", "v1.2.3");
+
+        result.Succeeded.Should().BeTrue(result.Error);
+    }
+
+    [Fact]
+    public void A_tag_absent_from_origin_is_refused()
+    {
+        _repository.Git("tag", "--annotate", "v1.2.3", "--message", "v1.2.3");
+
+        var result = _repository.Script("_release-tag.sh", "v1.2.3");
+
+        result.Succeeded.Should().BeFalse();
+        result.Error.Should().Contain("'v1.2.3' is not on origin");
     }
 
     [Theory]
@@ -54,7 +88,7 @@ public sealed class ReleaseTagTests : IDisposable
     [InlineData("v1.2.3-rc.10")]
     public void A_prerelease_tag_publishes_a_prerelease(string tag)
     {
-        _repository.Git("tag", "--annotate", tag, "--message", tag);
+        AnnotatedTag(tag);
 
         var result = _repository.Script("_release-tag.sh", tag);
 
@@ -72,7 +106,7 @@ public sealed class ReleaseTagTests : IDisposable
     [InlineData("v1.2.3-rc.1+build")]
     public void A_tag_outside_the_version_forms_is_refused(string tag)
     {
-        _repository.Git("tag", "--annotate", tag, "--message", tag);
+        AnnotatedTag(tag);
 
         var result = _repository.Script("_release-tag.sh", tag);
 
@@ -84,6 +118,7 @@ public sealed class ReleaseTagTests : IDisposable
     public void A_lightweight_tag_is_refused()
     {
         _repository.Git("tag", "v1.2.3");
+        _repository.Git("push", "--quiet", "origin", "refs/tags/v1.2.3");
 
         var result = _repository.Script("_release-tag.sh", "v1.2.3");
 
@@ -95,7 +130,7 @@ public sealed class ReleaseTagTests : IDisposable
     public void A_tag_on_a_commit_master_does_not_contain_is_refused()
     {
         _repository.Commit("work not yet promoted");
-        _repository.Git("tag", "--annotate", "v1.2.3", "--message", "v1.2.3");
+        AnnotatedTag("v1.2.3");
 
         var result = _repository.Script("_release-tag.sh", "v1.2.3");
 
@@ -107,7 +142,7 @@ public sealed class ReleaseTagTests : IDisposable
     public void A_tag_GitHub_does_not_verify_is_refused_with_its_reason()
     {
         _repository.GitHubVerifies(verified: false, reason: "unsigned");
-        _repository.Git("tag", "--annotate", "v1.2.3", "--message", "v1.2.3");
+        AnnotatedTag("v1.2.3");
 
         var result = _repository.Script("_release-tag.sh", "v1.2.3");
 
