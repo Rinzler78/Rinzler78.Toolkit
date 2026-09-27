@@ -44,8 +44,8 @@ A pull request is not delivered when it is opened. Loop until it is green:
 
 The pull request is green when no finding is open, locally or from Copilot, the
 branch has no merge conflict, and the required checks pass. Then, without asking:
-merge (squash into `develop`), pull the base branch, delete the branch and remove its
-worktree. In a repository that is a submodule of `Here.Sdk.Meta`, advance its pin
+merge — squash into `develop`, a merge commit into `master` — pull the base branch,
+delete the branch and remove its worktree. In a repository that is a submodule of `Here.Sdk.Meta`, advance its pin
 there, through a pull request that follows the same loop.
 
 ## Releasing
@@ -62,12 +62,18 @@ it is, carry it to the end without asking again:
 2. **Promote**: a pull request from `develop` to `master`, looped to green like any
    other, merged with a **merge commit** — never squashed, never rebased.
 3. **Tag the merge commit**, signed and annotated, its message the version followed by
-   the evidence the proposal cited, and push the tag:
+   the evidence the proposal cited, and push the tag. For a version derived from the
+   commits:
 
        git fetch origin --tags
-       { echo v0.2.0; echo; git log --no-merges --format='- %s' v0.1.1..origin/master; } |
+       previous=$(git describe --tags --abbrev=0 origin/master)
+       { echo v0.2.0; echo; git log --no-merges --format='- %s' "$previous..origin/master"; } |
          git tag --sign --annotate v0.2.0 --file - origin/master
        git push origin v0.2.0
+
+   For a version derived from the public API, the evidence is the surface diff:
+   replace the `git log` line with
+   `git diff "$previous" origin/master -- '*PublicAPI.Unshipped.txt'`.
 
    The push publishes, directly and irreversibly. `release.yml` refuses a tag outside
    `vMAJOR.MINOR.PATCH[-(alpha|beta|rc).N]`, a lightweight or unverified tag, and a
