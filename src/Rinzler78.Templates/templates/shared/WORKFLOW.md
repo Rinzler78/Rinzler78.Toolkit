@@ -57,9 +57,12 @@ it is, carry it to the end without asking again:
 1. **Propose the version, with its evidence.** Where a package has a public API, the
    diff of `PublicAPI.Unshipped.txt` decides: a removed or reshaped member is breaking,
    an added one a minor change, an empty diff a patch. Elsewhere, the Conventional
-   Commits since the last tag decide: `feat` a minor change, `fix` a patch, `!`
-   breaking. Before 1.0.0, a breaking change raises the minor; 1.0.0 is a decision,
-   never a consequence. Pre-releases are `-alpha.N`, `-beta.N` or `-rc.N`.
+   Commits since the last tag decide: `!` or a `BREAKING CHANGE` footer is breaking,
+   `feat` a minor change, `fix` and `perf` a patch, and every other type has no
+   effect; the strongest effect decides, and a range with none calls for no release.
+   Before 1.0.0, a breaking change raises the minor. 1.0.0 is a decision, never a
+   consequence: it needs an ADR declaring the public surface stable, which the
+   proposal cites. Pre-releases are `-alpha.N`, `-beta.N` or `-rc.N`.
 2. **Promote**: a pull request from `develop` to `master`, looped to green like any
    other, merged with a **merge commit** — never squashed, never rebased.
 3. **Tag the merge commit**, signed and annotated, its message the version followed by
