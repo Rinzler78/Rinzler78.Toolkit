@@ -81,7 +81,7 @@ it is, carry it to the end without asking again:
 
    The push publishes, directly and irreversibly. `release.yml` refuses a tag outside
    `vMAJOR.MINOR.PATCH[-(alpha|beta|rc).N]`, a lightweight or unverified tag, and a
-   tag on a commit `master` does not contain; `publish.sh` refuses a package whose
+   tag on a commit that `master` does not contain; `publish.sh` refuses a package whose
    manifest does not declare the tag's version. A mistaken tag is corrected with a new
    number: tags cannot be moved or deleted.
 4. **Follow it to the end**: the release run, the GitHub release, and the version

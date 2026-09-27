@@ -111,7 +111,7 @@ cannot start a workflow: events raised with `GITHUB_TOKEN` start none, except
 token. Its history is frozen in `CHANGELOG.md`; later notes are the GitHub releases.
 
 `scripts/_release-tag.sh` refuses a tag outside `vMAJOR.MINOR.PATCH[-(alpha|beta|rc).N]`,
-a lightweight tag, a tag GitHub does not verify as signed, and a tag on a commit
+a lightweight tag, a tag GitHub does not verify as signed, and a tag on a commit that
 `master` does not contain. The labels are the three the NuGet documentation defines,
 numbered after a dot so that `rc.10` sorts after `rc.2`. MinVer computes the version
 from the tags alone, in an IDE as in CI.
