@@ -7,7 +7,8 @@ follows it without asking, and stops only where [Stop and ask](#stop-and-ask) sa
 
 ## Branches
 
-- `develop` is where work lands. `master` receives only promotions from `develop`, and
+- `develop` is where work lands. `master` receives only promotions from `develop` — the
+  `verify` check fails a pull request into `master` from any other branch — and
   pre-releases and releases are cut from it.
 - Every change to `develop` or `master` goes through a pull request — promotions and
   submodule bumps included. The one exception is creating `master` once, when a
