@@ -13,6 +13,8 @@ internal sealed class ScratchRepository : IDisposable
 
     private readonly string _bin;
 
+    private string _origin => _root + "-origin";
+
     public ScratchRepository(params string[] scripts)
     {
         var scriptsDirectory = Path.Combine(_root, "scripts");
@@ -41,6 +43,17 @@ internal sealed class ScratchRepository : IDisposable
             return directory?.FullName
                 ?? throw new InvalidOperationException("The tests run outside the Rinzler78.Toolkit checkout.");
         }
+    }
+
+    /// <summary>
+    /// Gives the scratch repository an `origin`: a bare repository beside it, holding
+    /// what a push would put on the forge.
+    /// </summary>
+    public void AddOrigin()
+    {
+        Directory.CreateDirectory(_origin);
+        _ = Run("git", ["init", "--quiet", "--bare", _origin]);
+        Git("remote", "add", "origin", _origin);
     }
 
     public string Commit(string message)
@@ -187,7 +200,14 @@ internal sealed class ScratchRepository : IDisposable
         return new ScriptResult(process.ExitCode, output, error);
     }
 
-    public void Dispose() => Directory.Delete(_root, recursive: true);
+    public void Dispose()
+    {
+        Directory.Delete(_root, recursive: true);
+        if (Directory.Exists(_origin))
+        {
+            Directory.Delete(_origin, recursive: true);
+        }
+    }
 }
 
 internal sealed record ScriptResult(int ExitCode, string Output, string Error)
