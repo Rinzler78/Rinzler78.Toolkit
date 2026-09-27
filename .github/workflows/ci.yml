@@ -16,20 +16,6 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      # master receives promotions from develop and nothing else. No ruleset can
-      # restrict a pull request's source branch, so the required check does: a
-      # feature branch merged straight into master would skip the promotion, and a
-      # release could then be cut from code develop never held.
-      - name: Promotion comes from develop
-        if: github.event_name == 'pull_request' && github.base_ref == 'master'
-        env:
-          SOURCE: ${{ github.event.pull_request.head.repo.full_name }}:${{ github.head_ref }}
-          EXPECTED: ${{ github.repository }}:develop
-        run: |
-          # The repository as well as the branch: a fork's branch may be named develop.
-          [[ "$SOURCE" == "$EXPECTED" ]] ||
-            { echo "::error::only $EXPECTED is promoted into master; this pull request comes from $SOURCE"; exit 1; }
-
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0

@@ -79,6 +79,15 @@ public sealed class ProvisionForgeTests : IDisposable
     }
 
     [Fact]
+    public void Master_requires_the_promotion_check_and_develop_does_not()
+    {
+        var calls = Provision();
+
+        RulesetNamed(calls, "master").Should().Contain("{\"context\":\"promotion-source\",\"integration_id\":15368}");
+        RulesetNamed(calls, "develop").Should().NotContain("promotion-source");
+    }
+
+    [Fact]
     public void Master_takes_merge_commits_only_and_no_linear_history_rule()
     {
         var master = RulesetNamed(Provision(), "master");
