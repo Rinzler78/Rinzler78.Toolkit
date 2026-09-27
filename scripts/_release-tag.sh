@@ -24,6 +24,15 @@ readonly FORM="^v$NUMBER\\.$NUMBER\\.$NUMBER(-(alpha|beta|rc)\\.$NUMBER)?\$"
 [[ $tag =~ $FORM ]] ||
   fail "'$tag' is not a release tag: expected vMAJOR.MINOR.PATCH, optionally followed by -alpha.N, -beta.N or -rc.N"
 
+# The tag as origin holds it, not as the checkout left it. On a tag push,
+# actions/checkout fetches the tags, then tests the ref by comparing the commit with
+# `git rev-parse refs/tags/<tag>` — which, for an annotated tag, is the tag object's
+# SHA, never the commit's. The test always fails, and a second fetch of
+# +<commit>:refs/tags/<tag> rewrites the tag as a lightweight one. Read locally, every
+# release tag would look lightweight and be refused.
+git -C "$REPO_ROOT" fetch --quiet --force --no-tags origin "refs/tags/$tag:refs/tags/$tag" ||
+  fail "'$tag' is not on origin: push the tag, then let the release run"
+
 [[ $(git -C "$REPO_ROOT" cat-file -t "refs/tags/$tag") == tag ]] ||
   fail "'$tag' is a lightweight tag: tag with --annotate --sign so that it carries a signature"
 
