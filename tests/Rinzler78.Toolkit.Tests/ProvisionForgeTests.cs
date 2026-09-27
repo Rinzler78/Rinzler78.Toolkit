@@ -89,6 +89,16 @@ public sealed class ProvisionForgeTests : IDisposable
             .And.NotContain("required_linear_history");
     }
 
+    [Theory]
+    [InlineData("develop")]
+    [InlineData("master")]
+    public void Copilot_reviews_every_push_to_a_pull_request(string branch)
+    {
+        var ruleset = RulesetNamed(Provision(), branch);
+
+        ruleset.Should().Contain("{\"type\":\"copilot_code_review\",\"parameters\":{\"review_on_push\":true,\"review_draft_pull_requests\":true}}");
+    }
+
     [Fact]
     public void Release_tags_can_be_neither_moved_nor_deleted()
     {

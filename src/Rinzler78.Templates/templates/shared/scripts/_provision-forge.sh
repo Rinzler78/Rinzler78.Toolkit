@@ -11,6 +11,8 @@
 #   policy matches the workflow's file name and this environment, never the ref, and
 #   GitHub silently creates an unprotected environment the first time a job names one.
 # - develop takes squashed pull requests, with a linear, signed history.
+# - Copilot reviews every push to a pull request into either branch, so that no agent
+#   has to remember to ask: WORKFLOW.md's review loop ends only when it finds nothing.
 # - master takes merge commits only: a promotion keeps develop's history, so the next
 #   promotion shows only what is new. Signed, but not linear, by construction.
 # - Tags `v*` can be neither moved nor deleted: nuget.org never replaces a version, so a
@@ -55,7 +57,9 @@ branch_ruleset() {
               require_code_owner_review: false, require_last_push_approval: false,
               required_review_thread_resolution: false, allowed_merge_methods: [$method]}},
            {type: "required_status_checks", parameters: {
-              strict_required_status_checks_policy: false, required_status_checks: $checks}}])
+              strict_required_status_checks_policy: false, required_status_checks: $checks}},
+           {type: "copilot_code_review", parameters: {
+              review_on_push: true, review_draft_pull_requests: true}}])
     }'
 }
 
