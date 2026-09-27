@@ -70,6 +70,8 @@ second build semantics that continuous integration never exercises.
 - Blocking hooks have no opt-out. A block names something to fix.
 - Test-driven development for every feature and every fix.
 - One branch, one worktree under `.worktrees/<slug>`, never reused.
+- **[WORKFLOW.md](WORKFLOW.md) is how work is delivered and released** — branches, the
+  pull request loop, releases, and where to stop and ask. Follow it without asking.
 - English everywhere in the repository: code, comments, commits, documentation.
 
 <!-- shared:end -->

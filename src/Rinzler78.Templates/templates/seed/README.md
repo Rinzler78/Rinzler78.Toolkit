@@ -100,7 +100,7 @@ A release is a tag. When we are certain, we push a signed, annotated tag on a co
 
 `scripts/_release-tag.sh` refuses, before anything is built, a tag that is not
 `vMAJOR.MINOR.PATCH` with an optional `-alpha.N`, `-beta.N` or `-rc.N`, a lightweight
-tag, a tag GitHub does not verify as signed, and a tag on a commit `master` does not
+tag, a tag GitHub does not verify as signed, and a tag on a commit that `master` does not
 contain. The version is the tag's: MinVer reads it, so any other build is a prerelease
 counted from the last tag — `1.2.1-alpha.0.3` three commits after `v1.2.0`,
 `1.2.0-rc.1.3` three commits after `v1.2.0-rc.1` — and cannot be mistaken for a
