@@ -23,10 +23,12 @@ jobs:
       - name: Promotion comes from develop
         if: github.event_name == 'pull_request' && github.base_ref == 'master'
         env:
-          SOURCE: ${{ github.head_ref }}
+          SOURCE: ${{ github.event.pull_request.head.repo.full_name }}:${{ github.head_ref }}
+          EXPECTED: ${{ github.repository }}:develop
         run: |
-          [[ "$SOURCE" == develop ]] ||
-            { echo "::error::only develop is promoted into master; this pull request comes from $SOURCE"; exit 1; }
+          # The repository as well as the branch: a fork's branch may be named develop.
+          [[ "$SOURCE" == "$EXPECTED" ]] ||
+            { echo "::error::only $EXPECTED is promoted into master; this pull request comes from $SOURCE"; exit 1; }
 
       - uses: actions/checkout@v5
         with:
