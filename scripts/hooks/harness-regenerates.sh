@@ -84,8 +84,12 @@ for template in "${TEMPLATES[@]}"; do
     committed="$REPO_ROOT/$relative"
     # A file only this template ships — the library's mutation workflow — has no twin at
     # this repository's root, which has no assembly to mutate. It is compared with the
-    # template's own copy, so a rename or a mistyped source still cannot alter it.
-    [[ -f "$committed" ]] || committed="$TEMPLATE_ROOT/templates/$template/$relative"
+    # template's own copy, so a rename or a mistyped source still cannot alter it. A
+    # file that is also in `shared` is not template-only: its twin must exist at the
+    # root, and its absence there is still a divergence.
+    if [[ ! -f "$committed" && ! -f "$TEMPLATE_ROOT/templates/shared/$relative" ]]; then
+      committed="$TEMPLATE_ROOT/templates/$template/$relative"
+    fi
 
     if is_seed "$relative"; then
       seeded=$((seeded + 1))

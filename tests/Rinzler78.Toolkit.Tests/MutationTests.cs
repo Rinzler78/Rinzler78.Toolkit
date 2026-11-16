@@ -20,13 +20,23 @@ public sealed class MutationTests : IDisposable
           stryker)
             project=
             floor=0
+            low=0
+            high=100
             while (($#)); do
               case "$1" in
                 --project) project=$2; shift ;;
                 --break-at) floor=$2; shift ;;
+                --threshold-low) low=$2; shift ;;
+                --threshold-high) high=$2; shift ;;
               esac
               shift
             done
+            # Stryker refuses, before it mutates anything, a configuration where
+            # break <= low <= high does not hold, or a value outside 0-100.
+            awk -v b="$floor" -v l="$low" -v h="$high" 'BEGIN { exit !(b + 0 <= l + 0 && l + 0 <= h + 0 && h + 0 <= 100 && b ~ /^[0-9.]+$/) }' || {
+              echo "Threshold low must be more than or equal to threshold break. Current low: $low, break: $floor."
+              exit 1
+            }
             name=$(basename "$project" .csproj)
             score=$(cat "$PWD/.scores/$name" 2>/dev/null || true)
             [[ -z "$score" ]] && { echo "Stryker was unable to calculate a mutation score"; exit 0; }
@@ -187,7 +197,39 @@ public sealed class MutationTests : IDisposable
         var result = _repository.Script("mutation.sh", "--since", "origin/develop", "--baseline", "baseline.txt");
 
         result.Succeeded.Should().BeFalse();
-        _repository.CallsOf("dotnet").Should().Contain("--break-at 92");
+        _repository.CallsOf("dotnet").Should().Contain("--break-at 92").And.Contain("--threshold-low 92").And.Contain("--threshold-high 92");
+    }
+
+    [Fact]
+    public void A_diff_over_a_baseline_above_the_target_is_accepted_by_stryker_s_own_rules()
+    {
+        Dotnet();
+        Project("Alpha", "Alpha.Tests");
+        Score("Alpha", "99");
+        _repository.Write("baseline.txt", "Alpha=95\n");
+
+        var result = _repository.Script("mutation.sh", "--since", "origin/develop", "--baseline", "baseline.txt");
+
+        result.Succeeded.Should().BeTrue(result.Output + result.Error);
+    }
+
+    [Theory]
+    [InlineData("Alpha=")]
+    [InlineData("Alpha=abc")]
+    [InlineData("Alpha=92abc")]
+    [InlineData("Alpha=250")]
+    [InlineData("Alpha=-5")]
+    public void A_corrupt_baseline_line_never_reaches_stryker(string line)
+    {
+        Dotnet();
+        Project("Alpha", "Alpha.Tests");
+        Score("Alpha", "75");
+        _repository.Write("baseline.txt", line + "\n");
+
+        var result = _repository.Script("mutation.sh", "--since", "origin/develop", "--baseline", "baseline.txt");
+
+        result.Succeeded.Should().BeTrue(result.Output + result.Error);
+        _repository.CallsOf("dotnet").Should().Contain("--break-at 70");
     }
 
     [Fact]

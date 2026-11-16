@@ -46,8 +46,13 @@ jobs:
   # The whole of every mutable project, once a night, published as the baseline and as
   # the badge. This is the only job that writes: to the `badges` branch, which no
   # integration branch ever merges.
+  #
+  # Only from the default branch: a manual run from a feature branch would publish that
+  # branch's score as the project's. The `badges` branch is written by the Actions bot,
+  # unsigned, so a ruleset requiring signatures must target `develop` and `master`,
+  # never every branch.
   nightly:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -70,3 +75,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           ./scripts/_mutation-store.sh publish
+          # The badge to embed in the README, where the repository wants it.
+          echo "![mutation](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/$GITHUB_REPOSITORY/badges/mutation.json)" >>"$GITHUB_STEP_SUMMARY"

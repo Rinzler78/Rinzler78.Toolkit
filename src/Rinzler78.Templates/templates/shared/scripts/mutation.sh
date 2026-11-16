@@ -42,10 +42,13 @@ baseline_of() {
   awk -F= -v name="$name" '$1 == name { print $2; exit }' "$file"
 }
 
-# The higher of the break threshold and the project's full-run score.
+# The higher of the break threshold and the project's full-run score. A baseline that is
+# not a plain number from 0 to 100 is not a score: it is ignored, never passed on.
 break_for() {
-  local baseline=$1
-  awk -v floor="$BREAK_AT" -v baseline="${baseline:-0}" 'BEGIN { print (baseline + 0 > floor + 0) ? baseline : floor }'
+  local baseline=${1:-}
+  [[ "$baseline" =~ ^[0-9]+(\.[0-9]+)?$ ]] || baseline=0
+  awk -v floor="$BREAK_AT" -v baseline="$baseline" \
+    'BEGIN { print (baseline + 0 > floor + 0 && baseline + 0 <= 100) ? baseline + 0 : floor }'
 }
 
 mutate() {
@@ -56,8 +59,12 @@ mutate() {
 
   # No --test-project: the repository has a solution, so Stryker works in its context,
   # finds the test projects there, and refuses one named on the command line.
+  # Stryker wants break <= low <= high: the thresholds rise with the break, or it
+  # refuses the configuration before it has mutated anything.
+  local high
+  high=$(awk -v target="$TARGET" -v floor="$break_at" 'BEGIN { print (floor + 0 > target + 0) ? floor : target }')
   local arguments=(--test-runner mtp --project "$project" --break-at "$break_at"
-    --threshold-high "$TARGET" --threshold-low "$BREAK_AT" --output "$OUTPUT/stryker")
+    --threshold-high "$high" --threshold-low "$break_at" --output "$OUTPUT/stryker")
   [[ -n "$since" ]] && arguments+=("--since:$since")
 
   log "dotnet stryker ${arguments[*]}"

@@ -43,6 +43,14 @@ public sealed class MutationWiringTests
         workflow.Should().Contain("permissions:\n  contents: read");
     }
 
+    [Fact]
+    public void A_manual_run_from_another_branch_cannot_publish_its_score()
+    {
+        var workflow = File.ReadAllText(Path.Combine(Templates, "rinzler-lib", ".github", "workflows", "mutation.yml"));
+
+        workflow.Should().Contain("github.ref == format('refs/heads/{0}', github.event.repository.default_branch)");
+    }
+
     [Theory]
     [InlineData("rinzler-binding")]
     [InlineData("rinzler-app")]
