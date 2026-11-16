@@ -21,13 +21,26 @@ internal sealed class ScratchRepository : IDisposable
         Directory.CreateDirectory(scriptsDirectory);
         foreach (var script in scripts)
         {
-            File.Copy(Path.Combine(RepositoryRoot, "scripts", script), Path.Combine(scriptsDirectory, script));
+            var destination = Path.Combine(scriptsDirectory, script);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Copy(Path.Combine(RepositoryRoot, "scripts", script), destination);
         }
 
         _bin = Path.Combine(_root, ".bin");
         Directory.CreateDirectory(_bin);
 
         Git("init", "--quiet", "--initial-branch=develop");
+    }
+
+    /// <summary>The scratch repository's working tree.</summary>
+    public string Root => _root;
+
+    /// <summary>Writes <paramref name="content"/> at <paramref name="relativePath"/>, creating its directory.</summary>
+    public void Write(string relativePath, string content)
+    {
+        var path = Path.Combine(_root, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, content);
     }
 
     private static string RepositoryRoot
