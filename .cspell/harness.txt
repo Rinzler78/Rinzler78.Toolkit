@@ -70,3 +70,5 @@ brightgreen
 mktree
 rstart
 subsep
+gsub
+nroots

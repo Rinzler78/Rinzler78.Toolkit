@@ -46,7 +46,9 @@ is_percent() {
 
 # "<lines> <branches>" in percent for an assembly of the report, nothing when absent.
 # The report is read as a stream of tags, so that its layout (one line or many) is
-# irrelevant.
+# irrelevant. An assembly reported several times — a project tested on several target
+# frameworks, or loaded by several modules — is held to its worst entry: the figure that
+# flatters is not the one that protects.
 package_rates() {
   awk -v assembly="$2" '
     function attribute(tag, key,   at) {
@@ -56,9 +58,13 @@ package_rates() {
     }
     BEGIN { RS = "<" }
     /^package / && attribute($0, "name") == assembly {
-      printf "%.2f %.2f\n", attribute($0, "line-rate") * 100, attribute($0, "branch-rate") * 100
-      exit
-    }' "$1"
+      lines = attribute($0, "line-rate") * 100
+      branches = attribute($0, "branch-rate") * 100
+      if (!found || lines < worst_lines) worst_lines = lines
+      if (!found || branches < worst_branches) worst_branches = branches
+      found = 1
+    }
+    END { if (found) printf "%.2f %.2f\n", worst_lines, worst_branches }' "$1"
 }
 
 below() { awk -v value="$1" -v floor="$2" 'BEGIN { exit !(value + 0 < floor + 0) }'; }
@@ -103,35 +109,57 @@ gate_project() {
   ((failures > before)) || log "$name: $lines % of lines, $branches % of branches, floor $floor %"
 }
 
-# "<file> <number>" for every line added or changed since <revision>, in C# sources.
+# "<file> TAB <number>" for every line added or changed since <revision>, in C# sources.
+# Renames are not followed, so that a file renamed and edited is a new file with all its
+# lines; names are NUL-separated, so that a space or an accent in one is not a quoting
+# problem.
 changed_lines() {
   local since=$1 file
-  while IFS= read -r file; do
-    git -C "$REPO_ROOT" diff -U0 --no-color "$since...HEAD" -- "$file" |
+  while IFS= read -r -d '' file; do
+    git -C "$REPO_ROOT" diff -U0 --no-color --no-renames "$since...HEAD" -- "$file" |
       awk -v file="$file" '
         /^@@/ {
           match($0, /\+[0-9]+(,[0-9]+)?/)
           range = substr($0, RSTART + 1, RLENGTH - 1)
           split(range, part, ",")
           count = (part[2] == "") ? 1 : part[2]
-          for (i = 0; i < count; i++) print file, part[1] + i
+          for (i = 0; i < count; i++) printf "%s\t%d\n", file, part[1] + i
         }'
-  done < <(git -C "$REPO_ROOT" diff --name-only --diff-filter=AM "$since...HEAD" -- '*.cs')
+  done < <(git -C "$REPO_ROOT" diff -z --name-only --no-renames --diff-filter=AM "$since...HEAD" -- '*.cs')
 }
 
-# "<file> <coverable changed lines> <covered>" for each changed file the report knows.
+# What the report says of the changed lines, in two kinds of record:
+#   F <file> <coverable changed lines> <covered>   for each changed file it knows
+#   P <assembly> <classes> <classes under this checkout>   for each assembly
+# A filename is read as the machine that collected the report saw it: under the checkout
+# as typed or as resolved (a symlink, /private/var on macOS), with `\` or `/`, or as a
+# deterministic `/_/` path. The P records are what tells a report of another checkout
+# from a report with nothing to cover.
 diff_by_file() {
-  local report=$1 lines_file=$2
+  local report=$1 lines_file=$2 physical
+  physical=$(cd "$REPO_ROOT" && pwd -P)
   # Two inputs, two record separators: the changed lines are read by line, then the
   # report by tag, which the RS= operand between them switches.
-  awk -v root="$REPO_ROOT/" '
+  awk -F'\t' -v roots="$REPO_ROOT/|$physical/" '
+    function relative(path,   i) {
+      gsub(/\\/, "/", path)
+      for (i = 1; i <= nroots; i++)
+        if (index(path, root[i]) == 1) return substr(path, length(root[i]) + 1)
+      if (index(path, "/_/") == 1) return substr(path, 4)
+      return ""
+    }
+    BEGIN { nroots = split(roots, root, "|") }
     FILENAME == ARGV[1] { changed[$1 SUBSEP $2] = 1; next }
     {
-      if ($0 ~ /^class /) {
+      if ($0 ~ /^package /) {
+        match($0, / name="[^"]*"/)
+        package = substr($0, RSTART + 7, RLENGTH - 8)
+        packages[package] = 1
+      } else if ($0 ~ /^class /) {
         match($0, / filename="[^"]*"/)
-        file = substr($0, RSTART + 11, RLENGTH - 12)
-        sub("^" root, "", file)
-        sub("^/_/", "", file)
+        file = relative(substr($0, RSTART + 11, RLENGTH - 12))
+        classes[package]++
+        if (file != "") matched[package]++
       } else if ($0 ~ /^line / && file != "") {
         match($0, / number="[0-9]+"/)
         number = substr($0, RSTART + 9, RLENGTH - 10)
@@ -148,40 +176,69 @@ diff_by_file() {
         total[part[1]]++
         if (seen[key] > 0) covered[part[1]]++
       }
-      for (file in total) print file, total[file], covered[file] + 0
+      for (f in total) printf "F\t%s\t%d\t%d\n", f, total[f], covered[f] + 0
+      for (p in packages) printf "P\t%s\t%d\t%d\n", p, classes[p] + 0, matched[p] + 0
     }' "$lines_file" RS='<' "$report"
 }
 
+# The project that owns <file>, when it owes the gate: not a test project, not Exempt.
+gated_owner() {
+  local project contract
+  project=$(_owning_project "$1") || return 1
+  _is_test_project "$project" && return 1
+  contract=$(property "$project" RinzlerCoverageContract)
+  [[ "${contract:-Enforced}" == Exempt ]] && return 1
+  printf '%s\n' "$project"
+}
+
 gate_diff() {
-  local report=$1 since=$2 lines_file file total covered project name contract totals
+  local report=$1 since=$2 lines_file facts per_project file total covered project name percent assembly classes matched kind
   lines_file=$(mktemp)
-  totals=$(mktemp)
+  facts=$(mktemp)
+  per_project=$(mktemp)
   # shellcheck disable=SC2064 # the paths are fixed now, on purpose
-  trap "rm -f '$lines_file' '$totals'" RETURN
+  trap "rm -f '$lines_file' '$facts' '$per_project'" RETURN
   changed_lines "$since" >"$lines_file"
   [[ -s "$lines_file" ]] || {
     log "no C# line changed since $since: no diff to cover"
     return 0
   }
+  diff_by_file "$report" "$lines_file" >"$facts"
 
-  while read -r file total covered; do
-    project=$(_owning_project "$file") || continue
-    _is_test_project "$project" && continue
-    contract=$(property "$project" RinzlerCoverageContract)
-    [[ "${contract:-Enforced}" == Exempt ]] && continue
+  # The projects the diff touches that owe the gate, each with its changed files.
+  local touched=()
+  while IFS= read -r file; do
+    project=$(gated_owner "$file") || continue
+    [[ " ${touched[*]-} " == *" $project "* ]] || touched+=("$project")
+  done < <(cut -f1 "$lines_file" | sort -u)
+
+  while IFS=$'\t' read -r kind file total covered; do
+    [[ "$kind" == F ]] || continue
+    project=$(gated_owner "$file") || continue
     printf '%s %s %s\n' "$project" "$total" "$covered"
-  done < <(diff_by_file "$report" "$lines_file") >"$totals"
+  done <"$facts" >"$per_project"
+
+  # A report that names no file of a touched project's assembly under this checkout is
+  # not a report of this checkout: reading it as "nothing to cover" would pass anything.
+  for project in ${touched[@]+"${touched[@]}"}; do
+    name=$(basename "$project" .csproj)
+    assembly=$(property "$project" AssemblyName)
+    while IFS=$'\t' read -r kind file classes matched; do
+      [[ "$kind" == P && "$file" == "${assembly:-$name}" ]] || continue
+      ((classes > 0 && matched == 0)) &&
+        problem "$name: the report names no file under this checkout ($classes classes elsewhere): it is not of this checkout"
+    done <"$facts"
+  done
 
   while read -r project total covered; do
     name=$(basename "$project" .csproj)
-    local percent
     percent=$(awk -v t="$total" -v c="$covered" 'BEGIN { printf "%.2f", c * 100 / t }')
     if below "$percent" "$DIFF_FLOOR"; then
       problem "$name: $percent % of the changed lines are covered ($covered of $total), the diff floor is $DIFF_FLOOR %"
     else
       log "$name: diff covered at $percent % ($covered of $total)"
     fi
-  done < <(awk '{ total[$1] += $2; covered[$1] += $3 } END { for (p in total) print p, total[p], covered[p] }' "$totals")
+  done < <(awk '{ total[$1] += $2; covered[$1] += $3 } END { for (p in total) print p, total[p], covered[p] }' "$per_project")
 }
 
 evaluate() {
