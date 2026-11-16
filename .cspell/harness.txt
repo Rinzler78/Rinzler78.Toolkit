@@ -64,3 +64,5 @@ uall
 unlabel
 wayfinder
 wayfinding
+rlength
+sigpipe
