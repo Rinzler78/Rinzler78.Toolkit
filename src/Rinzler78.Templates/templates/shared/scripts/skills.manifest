@@ -1,0 +1,20 @@
+# The vendored skills, each pinned to a full upstream commit.
+# name  repository  commit  path in the repository
+# mattpocock/skills is at v1.3.2, obra/superpowers at v7.0.2. Both are MIT.
+# resolving-merge-conflicts is not vendored: upstream removed it in v1.3.0.
+ask-matt                        mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/engineering/ask-matt
+improve-codebase-architecture   mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/engineering/improve-codebase-architecture
+setup-matt-pocock-skills        mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/engineering/setup-matt-pocock-skills
+setup-pre-commit                mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/misc/setup-pre-commit
+to-questionnaire                mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/productivity/to-questionnaire
+to-spec                         mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/engineering/to-spec
+to-tickets                      mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/engineering/to-tickets
+triage                          mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/engineering/triage
+wait-what                       mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/productivity/wait-what
+writing-for-agents              mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/productivity/writing-for-agents
+tdd                             mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/engineering/tdd
+code-review                     mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/engineering/code-review
+diagnosing-bugs                 mattpocock/skills d1478fcb140db0b93c0c8df17bcfd311844749d0 skills/engineering/diagnosing-bugs
+verification-before-completion  obra/superpowers  22f0b463e7a5e579904dd6211a520321035526f7 skills/verification-before-completion
+using-git-worktrees             obra/superpowers  22f0b463e7a5e579904dd6211a520321035526f7 skills/using-git-worktrees
+finishing-a-development-branch  obra/superpowers  22f0b463e7a5e579904dd6211a520321035526f7 skills/finishing-a-development-branch

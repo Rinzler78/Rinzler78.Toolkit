@@ -43,6 +43,7 @@ Every repository in the ecosystem exposes the same verbs at the same place:
 | `e2e` | The end-to-end suite. |
 | `bench` | Measure the build, so that "fast" is a number. |
 | `clean` | Remove everything not tracked. |
+| `sync-skills` | Refresh the vendored skills from their upstream and commit the result. |
 
 There is deliberately no `fast-build` and no `build-release`. Speed and configuration
 are parameters, not actions: a variant script is a second build semantics that
