@@ -51,9 +51,21 @@ internal sealed class ScratchConsumer : IDisposable
         }
     }
 
-    public async Task<BuildResult> BuildAsync()
+    public Task<BuildResult> BuildAsync() => RunAsync("build");
+
+    /// <summary>
+    /// The value MSBuild evaluates for <paramref name="name"/> in this project, empty when
+    /// the property is not set: what the contract *does*, not what its text says.
+    /// </summary>
+    public async Task<string> PropertyAsync(string name)
     {
-        var start = new ProcessStartInfo("dotnet", ["build", "-nologo", "-nodeReuse:false", "--disable-build-servers"])
+        var result = await RunAsync("msbuild", $"-getProperty:{name}").ConfigureAwait(false);
+        return result.Output.Trim();
+    }
+
+    private async Task<BuildResult> RunAsync(string verb, params string[] arguments)
+    {
+        var start = new ProcessStartInfo("dotnet", [verb, "-nologo", "-nodeReuse:false", "--disable-build-servers", .. arguments])
         {
             WorkingDirectory = _directory,
             RedirectStandardOutput = true,

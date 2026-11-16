@@ -179,7 +179,7 @@ is a reviewable pull request in the repository that owns it.
 | `RinzlerForbiddenDependency` | Package identities this layer may not declare a dependency on. |
 | `RinzlerRequiredAnalyzer` | Analysers this project must reference, each with a `Because`. |
 | `RinzlerRequiredDescription` | A fragment every package description must carry. |
-| `RinzlerTrimContract` | `OutOfScope`, `Trimmable` or `AotCompatible`. |
+| `RinzlerTrimContract` | `Committed`, `Analyzed` or `OutOfScope`. |
 | `RinzlerCoverageContract` | `Enforced`, `Reduced` or `Exempt`. |
 
 This repository ships no assembly with a public surface, so the gates that
