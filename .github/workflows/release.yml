@@ -55,6 +55,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
+      # The version must be the one the commits justify, and the tag's message must carry
+      # the evidence: a package with no public API surface has nothing else to decide it.
+      # A repository with a surface leaves this to the surface diff.
+      - name: Version check
+        run: ./scripts/_release-version.sh "$GITHUB_REF_NAME"
+
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json

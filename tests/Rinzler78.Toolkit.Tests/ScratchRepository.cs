@@ -43,7 +43,7 @@ internal sealed class ScratchRepository : IDisposable
         File.WriteAllText(path, content);
     }
 
-    private static string RepositoryRoot
+    internal static string RepositoryRoot
     {
         get
         {
