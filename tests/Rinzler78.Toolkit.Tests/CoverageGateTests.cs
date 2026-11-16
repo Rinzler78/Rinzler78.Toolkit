@@ -7,11 +7,14 @@ namespace Rinzler78.Toolkit.Tests;
 
 public sealed class CoverageGateTests : IDisposable
 {
-    private readonly ScratchRepository _repository = new("_common.sh", "_affected.sh", "_coverage-gate.sh");
+    private readonly ScratchRepository _repository;
     private readonly List<string> _packages = [];
 
+    // Every case runs in a checkout whose path holds a pipe, a space and regex characters:
+    // a root is data to the gate, never syntax, and a gate that reads it as syntax fails open.
     public CoverageGateTests()
     {
+        _repository = new ScratchRepository("|p q.(r)+", ["_common.sh", "_affected.sh", "_coverage-gate.sh"]);
         // `dotnet msbuild <project> -getProperty:<name>` answers from files beside the
         // shim: .props/<Project>.<name>, with the defaults of a project that says nothing.
         _repository.Shim("dotnet", """

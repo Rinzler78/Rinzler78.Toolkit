@@ -140,15 +140,16 @@ diff_by_file() {
   physical=$(cd "$REPO_ROOT" && pwd -P)
   # Two inputs, two record separators: the changed lines are read by line, then the
   # report by tag, which the RS= operand between them switches.
-  awk -F'\t' -v roots="$REPO_ROOT/|$physical/" '
-    function relative(path,   i) {
+  # The two roots are separate variables: any separator inside one string is a character
+  # a path may contain, and a root split in two matches nothing and fails open.
+  awk -F'\t' -v typed="$REPO_ROOT/" -v resolved="$physical/" '
+    function relative(path) {
       gsub(/\\/, "/", path)
-      for (i = 1; i <= nroots; i++)
-        if (index(path, root[i]) == 1) return substr(path, length(root[i]) + 1)
+      if (index(path, typed) == 1) return substr(path, length(typed) + 1)
+      if (index(path, resolved) == 1) return substr(path, length(resolved) + 1)
       if (index(path, "/_/") == 1) return substr(path, 4)
       return ""
     }
-    BEGIN { nroots = split(roots, root, "|") }
     FILENAME == ARGV[1] { changed[$1 SUBSEP $2] = 1; next }
     {
       if ($0 ~ /^package /) {

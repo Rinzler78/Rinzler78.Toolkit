@@ -8,15 +8,25 @@ namespace Rinzler78.Toolkit.Tests;
 /// </summary>
 internal sealed class ScratchRepository : IDisposable
 {
-    private readonly string _root =
-        Path.Combine(Path.GetTempPath(), "rinzler-toolkit-tests", Guid.NewGuid().ToString("N"));
+    private readonly string _root;
 
     private readonly string _bin;
 
     private string _origin => _root + "-origin";
 
     public ScratchRepository(params string[] scripts)
+        : this(string.Empty, scripts)
     {
+    }
+
+    /// <summary>
+    /// A scratch repository whose directory name ends with <paramref name="rootSuffix"/>: a
+    /// checkout path is not always a tidy one, and a script that mishandles a space, a
+    /// pipe or a regex character in it fails open.
+    /// </summary>
+    public ScratchRepository(string rootSuffix, string[] scripts)
+    {
+        _root = Path.Combine(Path.GetTempPath(), "rinzler-toolkit-tests", Guid.NewGuid().ToString("N") + rootSuffix);
         var scriptsDirectory = Path.Combine(_root, "scripts");
         Directory.CreateDirectory(scriptsDirectory);
         foreach (var script in scripts)
