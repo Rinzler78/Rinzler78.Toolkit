@@ -68,3 +68,5 @@ rlength
 sigpipe
 brightgreen
 mktree
+rstart
+subsep

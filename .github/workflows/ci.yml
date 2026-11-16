@@ -46,9 +46,20 @@ jobs:
           CONFIGURATION: Release
 
       - name: Test
+        if: github.event_name != 'pull_request'
         run: ./scripts/test.sh
         env:
           CONFIGURATION: Release
+
+      # A pull request runs the suite once, inside the coverage collector, and is held to
+      # the contract of each project: its floor, and the diff floor on what it changes.
+      # A project declaring Exempt, and a repository with no assembly, are not gated.
+      - name: Test and coverage gate
+        if: github.event_name == 'pull_request'
+        run: ./scripts/coverage.sh --gate --since "origin/$BASE_REF"
+        env:
+          CONFIGURATION: Release
+          BASE_REF: ${{ github.base_ref }}
 
       # package was absent from the verify job, so a pack failure reached develop
       # unnoticed: NU5017 is emitted alongside a successfully written package, which
