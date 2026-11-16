@@ -25,6 +25,7 @@ is what makes it usable as a continuous integration gate.
 | `setup-env` | Converges the machine to the declared toolchain; `--check` reports without mutating. |
 | `restore` | Locked in continuous integration, permissive locally. |
 | `build` `test` `coverage` | `CONFIGURATION=Release` selects the configuration; there is no separate release verb. |
+| `mutation` | Stryker.NET on every project that owes it: whole, or `--since <rev>` for a diff, which may not score under the project's last full-run score (`--baseline`). Breaks under 70 %, targets 85 %. |
 | `watch` | The fast inner loop: the same build, re-triggered on change. |
 | `run` `deploy` | Run locally, or deploy to an emulator, simulator or device. |
 | `package` `publish` | Pack, then push to nuget.org. |

@@ -134,6 +134,21 @@ internal sealed class ScratchRepository : IDisposable
         MakeExecutable(gh);
     }
 
+    /// <summary>
+    /// Puts a stand-in for <paramref name="name"/> first on the PATH. Every call's
+    /// arguments are appended to <see cref="CallsOf"/> before <paramref name="body"/> runs.
+    /// </summary>
+    public void Shim(string name, string body)
+    {
+        var path = Path.Combine(_bin, name);
+        File.WriteAllText(path, $"#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" >>\"{_bin}/{name}.calls\"\n{body}\n");
+        MakeExecutable(path);
+    }
+
+    /// <summary>The arguments of each call a <see cref="Shim"/> received, one per line.</summary>
+    public string CallsOf(string name) =>
+        File.Exists(Path.Combine(_bin, name + ".calls")) ? File.ReadAllText(Path.Combine(_bin, name + ".calls")) : string.Empty;
+
     public string GitHubCalls =>
         File.Exists(Path.Combine(_bin, "calls.log")) ? File.ReadAllText(Path.Combine(_bin, "calls.log")) : string.Empty;
 
