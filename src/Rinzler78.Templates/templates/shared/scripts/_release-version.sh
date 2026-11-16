@@ -61,7 +61,9 @@ classify() {
 previous_stable() {
   local commit=$1 tag=$2 candidate
   while IFS= read -r candidate; do
-    [[ "$candidate" == "$tag" || "$candidate" == *-* ]] && continue
+    [[ "$candidate" == "$tag" ]] && continue
+    # A baseline is a full stable version: v1.2 or v1.2.3+meta would break the arithmetic below.
+    [[ "$candidate" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || continue
     printf '%s' "$candidate"
     return 0
   done < <(git -C "$REPO_ROOT" tag --merged "$commit" --list 'v*' --sort=-version:refname)
@@ -69,10 +71,14 @@ previous_stable() {
 
 # The tag message must name a file of the tagged commit that declares the surface stable.
 require_stability_decision() {
-  local commit=$1 message=$2 word
+  local commit=$1 message=$2 word content
   while IFS= read -r word; do
-    git -C "$REPO_ROOT" cat-file -e "$commit:$word" 2>/dev/null || continue
-    git -C "$REPO_ROOT" show "$commit:$word" 2>/dev/null | grep -qi 'stable' && return 0
+    # A file, not a directory; and its text read whole before it is searched, because
+    # grep -q stops at the first match and the writer then dies of SIGPIPE under pipefail.
+    [[ $(git -C "$REPO_ROOT" cat-file -t "$commit:$word" 2>/dev/null) == blob ]] || continue
+    content=$(git -C "$REPO_ROOT" show "$commit:$word" 2>/dev/null)
+    # The word, not the substring: "the surface is unstable" declares the opposite.
+    grep -qiw 'stable' <<<"$content" && return 0
   done < <(printf '%s\n' "$message" | tr -s ' \t' '\n')
   fail "1.0.0 after a 0.x version needs an ADR declaring the public surface stable: name its path in the tag message, and write 'stable' in it"
 }
@@ -87,20 +93,27 @@ main() {
   local commit
   commit=$(git -C "$REPO_ROOT" rev-parse "refs/tags/$tag^{commit}")
 
-  if git -C "$REPO_ROOT" ls-tree -r --name-only "$commit" | grep -q 'PublicAPI\.Shipped\.txt$'; then
+  local tree
+  tree=$(git -C "$REPO_ROOT" ls-tree -r --name-only "$commit")
+  if grep -q 'PublicAPI\.Shipped\.txt$' <<<"$tree"; then
     log "$tag: this repository has a public surface; its version is judged on the surface diff, not on commits"
     return 0
   fi
 
   local previous
   previous=$(previous_stable "$commit" "$tag")
-  if [[ -z "$previous" ]]; then
-    log "$tag: first release — no earlier stable tag to compare with"
-    return 0
-  fi
 
   local message
   message=$(git -C "$REPO_ROOT" for-each-ref --format='%(contents:body)' "refs/tags/$tag")
+
+  # Nothing to compare with, but the evidence is still owed: the message cites the
+  # commits that justify the first version.
+  if [[ -z "$previous" ]]; then
+    [[ -n "${message//[[:space:]]/}" ]] ||
+      fail "$tag is a first release and its message carries no evidence: list the commits it publishes"
+    log "$tag: first release — no earlier stable tag to compare with"
+    return 0
+  fi
 
   local pa pb pc
   IFS=. read -r pa pb pc <<<"${previous#v}"

@@ -292,4 +292,64 @@ public sealed class ReleaseVersionTests : IDisposable
         check.Should().BeLessThan(login);
         workflow.IndexOf("_release-tag.sh", StringComparison.Ordinal).Should().BeLessThan(check);
     }
+
+    [Fact]
+    public void A_named_file_that_says_the_surface_is_unstable_is_refused()
+    {
+        Baseline("v0.9.0");
+        _repository.Write("docs/adr/0002-unstable.md", "# The surface is unstable\n");
+        _repository.Git("add", "--all");
+        Commit("fix: a");
+        _repository.Git("tag", "--annotate", "v1.0.0", "--message", "v1.0.0\n\ndocs/adr/0002-unstable.md\n");
+
+        Check("v1.0.0").Succeeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_named_directory_is_not_a_decision()
+    {
+        Baseline("v0.9.0");
+        _repository.Write("docs/adr/0001-stable.md", "# The surface is stable\n");
+        _repository.Git("add", "--all");
+        Commit("fix: a");
+        _repository.Git("tag", "--annotate", "v1.0.0", "--message", "v1.0.0\n\ndocs/adr\n");
+
+        Check("v1.0.0").Succeeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_scoped_breaking_change_is_breaking()
+    {
+        Baseline("v1.2.3");
+        Commit("feat(build)!: drop a property");
+        Tag("v2.0.0", "feat(build)!: drop a property");
+
+        Check("v2.0.0").Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_stable_tag_that_is_not_a_full_version_is_not_a_baseline()
+    {
+        Baseline("v0.1.0");
+        Commit("fix: a");
+        _repository.Git("tag", "--annotate", "v1.2", "--message", "not a version");
+        Commit("fix: b");
+        Tag("v0.1.1", "fix: a", "fix: b");
+
+        var result = Check("v0.1.1");
+
+        result.Succeeded.Should().BeTrue(result.Error);
+    }
+
+    [Fact]
+    public void A_first_release_still_needs_its_evidence()
+    {
+        Commit("feat: the first verb");
+        _repository.Git("tag", "--annotate", "v0.1.0", "--message", "v0.1.0");
+
+        var result = Check("v0.1.0");
+
+        result.Succeeded.Should().BeFalse();
+        result.Error.Should().Contain("evidence");
+    }
 }
