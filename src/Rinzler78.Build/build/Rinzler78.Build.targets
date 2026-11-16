@@ -19,21 +19,35 @@
 
   <!-- Trimming and ahead-of-time compatibility require net6.0 or later. Declaring
        them on netstandard2.0 produces a project that cannot build, so the contract
-       is applied through a framework test rather than a string comparison. -->
-  <PropertyGroup Condition="'$(RinzlerTrimContract)' == 'Trimmable' AND
+       is applied through a framework test rather than a string comparison, and the
+       slices of a multi-targeted project that predate trimming are out of scope
+       whatever the declared value.
+
+       Committed — the library shrinks in every integrator's Release build, so it is
+       marked trimmable and held to AOT compatibility. The AOT marking starts at
+       net7.0, where its analysers exist: on net6.0 it switches the trim checks off,
+       which would make a Committed library look enforced while it is not.
+       Analyzed  — the trim analyser runs and flags what would break, but nothing is
+       marked trimmable: IsTrimmable is a promise, and this value makes none.
+       OutOfScope — not a trimming subject: nothing is set. -->
+  <PropertyGroup Condition="'$(RinzlerTrimContract)' == 'Committed' AND
                             $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(RinzlerTrimContract)' == 'AotCompatible' AND
-                            $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+  <PropertyGroup Condition="'$(RinzlerTrimContract)' == 'Committed' AND
+                            $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RinzlerTrimContract)' == 'Analyzed' AND
+                            $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <Target Name="RinzlerValidateContracts" BeforeTargets="Build">
-    <Error Condition="'$(RinzlerTrimContract)' != 'OutOfScope' AND
-                      '$(RinzlerTrimContract)' != 'Trimmable' AND
-                      '$(RinzlerTrimContract)' != 'AotCompatible'"
-           Text="RinzlerTrimContract must be OutOfScope, Trimmable or AotCompatible; found '$(RinzlerTrimContract)'." />
+    <Error Condition="'$(RinzlerTrimContract)' != 'Committed' AND
+                      '$(RinzlerTrimContract)' != 'Analyzed' AND
+                      '$(RinzlerTrimContract)' != 'OutOfScope'"
+           Text="RinzlerTrimContract must be Committed, Analyzed or OutOfScope; found '$(RinzlerTrimContract)'." />
     <Error Condition="'$(RinzlerCoverageContract)' != 'Enforced' AND
                       '$(RinzlerCoverageContract)' != 'Reduced' AND
                       '$(RinzlerCoverageContract)' != 'Exempt'"
