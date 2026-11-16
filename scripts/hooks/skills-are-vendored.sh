@@ -37,6 +37,18 @@ for root in "$A" "$B"; do
   done <<<"$present"
 done
 
+# The notice is the record of what is vendored: a pin edited without a refresh would
+# otherwise pass while the skills still carry the old commit.
+while read -r name _ ref _; do
+  [[ -n "$name" ]] || continue
+  for root in "$A" "$B"; do
+    grep -qF -e "- \`$name\` at \`$ref\`" "$root/NOTICE.md" 2>/dev/null || {
+      printf '%s/NOTICE.md does not record %s at %s\n' "${root#"$REPO_ROOT"/}" "$name" "$ref" >&2
+      problems=$((problems + 1))
+    }
+  done
+done < <(grep -vE '^[[:space:]]*(#|$)' "$MANIFEST")
+
 ((problems == 0)) || fail "$problems problem(s): run scripts/sync-skills.sh"
 
 diff -r "$A" "$B" >/dev/null || fail '.agents/skills and .claude/skills diverge: run scripts/sync-skills.sh'

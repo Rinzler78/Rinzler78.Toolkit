@@ -1,6 +1,6 @@
 # Vendored skills
 
-The sixteen skills of the ecosystem are committed here and, byte for byte, in
+The skills of the ecosystem are committed here and, byte for byte, in
 `.claude/skills/`. Physical duplication rather than symbolic links: without
 Developer Mode, a Windows checkout degrades a symlink into a text file holding the
 target path.
@@ -14,4 +14,3 @@ keeps the two directories identical and the set equal to the manifest.
 
 A skill is added or removed by editing the manifest, never by editing a skill:
 copies from a local machine store carry personal edits and are not a source.
-`resolving-merge-conflicts` is not part of the set: its upstream removed it.

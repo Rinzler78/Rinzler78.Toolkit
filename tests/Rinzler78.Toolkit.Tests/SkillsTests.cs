@@ -41,6 +41,15 @@ public sealed class SkillsTests : IDisposable
         tar.ExitCode.Should().Be(0);
     }
 
+    private void PackAgain(string repository)
+    {
+        var staging = Path.Combine(_upstream, "staging", repository.Replace('/', '-'));
+        var archive = Path.Combine(_upstream, repository, "tar.gz", Ref);
+        var tar = Process.Start(new ProcessStartInfo("tar", ["czf", archive, "-C", staging, "top"]))!;
+        tar.WaitForExit();
+        tar.ExitCode.Should().Be(0);
+    }
+
     private void Manifest(params string[] lines) =>
         _repository.Write("scripts/skills.manifest", string.Join('\n', lines) + "\n");
 
@@ -55,7 +64,7 @@ public sealed class SkillsTests : IDisposable
             ("skills/a/tdd/SKILL.md", "---\nname: tdd\n---\nred green\n"),
             ("skills/a/tdd/extra.md", "reference\n"),
             ("skills/b/triage/SKILL.md", "---\nname: triage\n---\n"),
-            ("LICENSE", "MIT License\nCopyright acme\n"));
+            ("LICENSE", "MIT License\n\nCopyright acme\n"));
         Manifest(
             "# name repository ref path",
             $"tdd acme/skills {Ref} skills/a/tdd",
@@ -140,16 +149,116 @@ public sealed class SkillsTests : IDisposable
     }
 
     [Fact]
-    public void A_skill_missing_upstream_is_refused_and_nothing_is_written()
+    public void A_skill_missing_upstream_is_refused_and_the_vendored_tree_survives()
     {
         TwoSkills();
-        Manifest($"gone acme/skills {Ref} skills/a/gone");
+        Sync("--no-commit").Succeeded.Should().BeTrue();
+        Manifest($"tdd acme/skills {Ref} skills/a/tdd", $"gone acme/skills {Ref} skills/a/gone");
 
         var result = Sync("--no-commit");
 
         result.Succeeded.Should().BeFalse();
         result.Error.Should().Contain("skills/a/gone");
+        File.Exists(Path.Combine(_repository.Root, ".agents/skills/triage/SKILL.md")).Should().BeTrue();
         Directory.Exists(Path.Combine(_repository.Root, ".agents/skills/gone")).Should().BeFalse();
+    }
+
+    [Fact]
+    public void An_unreachable_upstream_is_refused()
+    {
+        TwoSkills();
+
+        var result = _repository.Script("sync-skills.sh", "--base", "file://" + _upstream + "-nowhere", "--no-commit");
+
+        result.Succeeded.Should().BeFalse();
+        result.Error.Should().Contain("cannot fetch");
+    }
+
+    [Fact]
+    public void An_upstream_without_a_licence_is_refused()
+    {
+        Upstream("acme/skills", ("skills/a/tdd/SKILL.md", "x"));
+        Manifest($"tdd acme/skills {Ref} skills/a/tdd");
+
+        var result = Sync("--no-commit");
+
+        result.Succeeded.Should().BeFalse();
+        result.Error.Should().Contain("LICENSE");
+    }
+
+    [Fact]
+    public void One_repository_pinned_at_two_commits_is_refused()
+    {
+        TwoSkills();
+        Manifest($"tdd acme/skills {Ref} skills/a/tdd", $"triage acme/skills {new string('f', 40)} skills/b/triage");
+
+        var result = Sync("--no-commit");
+
+        result.Succeeded.Should().BeFalse();
+        result.Error.Should().Contain("two commits");
+    }
+
+    [Fact]
+    public void A_symbolic_link_inside_an_upstream_archive_is_refused()
+    {
+        Upstream("acme/skills", ("skills/a/tdd/SKILL.md", "x"), ("LICENSE", "MIT\n"));
+        File.CreateSymbolicLink(
+            Path.Combine(_upstream, "staging", "acme-skills", "top", "skills/a/tdd/link"), "SKILL.md");
+        PackAgain("acme/skills");
+        Manifest($"tdd acme/skills {Ref} skills/a/tdd");
+
+        var result = Sync("--no-commit");
+
+        result.Succeeded.Should().BeFalse();
+        result.Error.Should().Contain("symbolic link");
+    }
+
+    [Fact]
+    public void Only_skill_folders_are_replaced_and_files_at_the_root_survive()
+    {
+        TwoSkills();
+        _repository.Write(".agents/skills/KEEP.txt", "mine");
+
+        Sync("--no-commit").Succeeded.Should().BeTrue();
+
+        File.ReadAllText(Path.Combine(_repository.Root, ".agents/skills/KEEP.txt")).Should().Be("mine");
+    }
+
+    [Fact]
+    public void A_manifest_separated_by_tabs_is_read()
+    {
+        TwoSkills();
+        Manifest($"tdd\tacme/skills\t{Ref}\tskills/a/tdd");
+
+        Sync("--no-commit").Succeeded.Should().BeTrue();
+
+        File.Exists(Path.Combine(_repository.Root, ".agents/skills/tdd/SKILL.md")).Should().BeTrue();
+    }
+
+    [Fact]
+    public void The_notice_carries_no_trailing_whitespace()
+    {
+        TwoSkills();
+
+        Sync("--no-commit").Succeeded.Should().BeTrue();
+
+        File.ReadAllLines(Path.Combine(_repository.Root, ".agents/skills/NOTICE.md"))
+            .Should().OnlyContain(line => line == line.TrimEnd());
+    }
+
+    [Fact]
+    public void Only_the_skills_are_committed_not_what_else_was_staged()
+    {
+        TwoSkills();
+        _repository.Commit("seed");
+        _repository.Git("switch", "--quiet", "-c", "feature/refresh-skills");
+        _repository.Write("unrelated.txt", "x");
+        _repository.Git("add", "unrelated.txt");
+
+        Sync().Succeeded.Should().BeTrue();
+
+        _repository.Git("show", "--name-only", "--format=", "HEAD").Should().NotContain("unrelated.txt");
+        _repository.Git("status", "--porcelain").Should().Contain("unrelated.txt");
     }
 
     [Fact]
@@ -252,5 +361,18 @@ public sealed class SkillsTests : IDisposable
 
         result.Succeeded.Should().BeFalse();
         result.Error.Should().Contain("symbolic link");
+    }
+
+    [Fact]
+    public void The_check_refuses_a_pin_that_the_notice_does_not_record()
+    {
+        TwoSkills();
+        Sync("--no-commit").Succeeded.Should().BeTrue();
+        Manifest($"tdd acme/skills {new string('a', 40)} skills/a/tdd", $"triage acme/skills {Ref} skills/b/triage");
+
+        var result = Check();
+
+        result.Succeeded.Should().BeFalse();
+        result.Error.Should().Contain("NOTICE.md");
     }
 }

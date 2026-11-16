@@ -28,7 +28,8 @@ write_notice() {
       printf '\n## %s\n\n' "$repository"
       awk -v r="$repository" '$2 == r { printf "- `%s` at `%s`\n", $1, $3 }' "$MANIFEST_BODY"
       printf '\n'
-      sed 's/^/    /' "$WORK/licence/${repository//\//-}"
+      # Blank lines stay blank: indenting them leaves trailing whitespace the repository's own hook rewrites.
+      sed '/./s/^/    /' "$WORK/licence/${repository//\//-}"
     done < <(awk '{ print $2 }' "$MANIFEST_BODY" | sort -u)
   } >"$target"
 }
@@ -79,6 +80,11 @@ main() {
       fail "the refresh is committed on a feature branch, not on '$branch': create one, or pass --no-commit"
   fi
 
+  # One licence text is kept per repository: two pins of the same repository would share it.
+  local twice
+  twice=$(awk '($2 in seen) && seen[$2] != $3 { print $2; exit } { seen[$2] = $3 }' "$MANIFEST_BODY")
+  [[ -z "$twice" ]] || fail "$twice is pinned at two commits: vendor one commit per repository"
+
   local name repository ref path
   while read -r name repository ref path; do
     [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || fail "$name: '$ref' is not a full commit"
@@ -86,6 +92,11 @@ main() {
     [[ -f "$WORK/${repository//\//-}-$ref/$path/SKILL.md" ]] ||
       fail "$name: $path/SKILL.md is not in $repository at $ref"
   done <"$MANIFEST_BODY"
+
+  # A link inside an archive would be copied as a link, which a Windows checkout degrades to text.
+  local links
+  links=$(find "$WORK" -type l | head -3)
+  [[ -z "$links" ]] || fail "symbolic link in an upstream archive: ${links//$WORK\//}"
 
   local destination
   for destination in "${DESTINATIONS[@]}"; do
@@ -105,11 +116,13 @@ main() {
   log "$(wc -l <"$MANIFEST_BODY" | tr -d ' ') skill(s) refreshed in ${DESTINATIONS[*]}"
 
   if ((commit)); then
-    git -C "$REPO_ROOT" add -- "${DESTINATIONS[@]}" scripts/skills.manifest
-    if git -C "$REPO_ROOT" diff --cached --quiet; then
+    # Only these paths: whatever else is staged stays staged and uncommitted.
+    local paths=("${DESTINATIONS[@]}" scripts/skills.manifest)
+    git -C "$REPO_ROOT" add -- "${paths[@]}"
+    if git -C "$REPO_ROOT" diff --cached --quiet -- "${paths[@]}"; then
       log 'nothing changed: nothing to commit'
     else
-      git -C "$REPO_ROOT" commit --quiet -m 'chore(skills): refresh the vendored skills from their upstream'
+      git -C "$REPO_ROOT" commit --quiet -m 'chore(skills): refresh the vendored skills from their upstream' -- "${paths[@]}"
       log 'committed'
     fi
   fi
