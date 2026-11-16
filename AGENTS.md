@@ -46,6 +46,7 @@ Every repository in the ecosystem exposes the same verbs at the same place:
     scripts/format.sh                scripts/e2e.sh       scripts/bench.sh
     scripts/clean.sh                 scripts/checks.sh [--stage pre-commit|pre-push]
     scripts/sync-skills.sh [--no-commit]
+    scripts/mutation.sh [--since <revision>]
 
 The repository's own checks are one script each in `scripts/hooks/`, declaring
 `# rinzler-stage:` in their header; `scripts/checks.sh` discovers them, and nothing

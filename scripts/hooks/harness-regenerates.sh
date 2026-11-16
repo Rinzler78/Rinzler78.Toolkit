@@ -82,6 +82,10 @@ for template in "${TEMPLATES[@]}"; do
   while IFS= read -r -d '' generated; do
     relative=${generated#"$output/"}
     committed="$REPO_ROOT/$relative"
+    # A file only this template ships — the library's mutation workflow — has no twin at
+    # this repository's root, which has no assembly to mutate. It is compared with the
+    # template's own copy, so a rename or a mistyped source still cannot alter it.
+    [[ -f "$committed" ]] || committed="$TEMPLATE_ROOT/templates/$template/$relative"
 
     if is_seed "$relative"; then
       seeded=$((seeded + 1))

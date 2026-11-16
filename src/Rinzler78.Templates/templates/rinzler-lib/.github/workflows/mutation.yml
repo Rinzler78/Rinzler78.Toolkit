@@ -1,0 +1,72 @@
+name: mutation
+
+# Mutation testing, Stryker.NET. Only the library template carries this file: a binding
+# is Exempt (its projection produces mutants with no meaning), and a repository with
+# no assembly to mutate has nothing to run. Which projects owe it is decided by
+# scripts/mutation.sh, from each project's own coverage contract.
+on:
+  pull_request:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # What the pull request changes, and no more: the whole suite is the nightly's work.
+  # The project's own last full-run score is the floor, so a patch that lowers the
+  # score is refused even when it stays above the break threshold.
+  diff:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - run: dotnet restore --locked-mode
+
+      - name: Baseline
+        run: ./scripts/_mutation-store.sh fetch artifacts/mutation-baseline.txt
+
+      - name: Mutation, on the diff
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: ./scripts/mutation.sh --since "origin/$BASE_REF" --baseline artifacts/mutation-baseline.txt
+
+  # The whole of every mutable project, once a night, published as the baseline and as
+  # the badge. This is the only job that writes: to the `badges` branch, which no
+  # integration branch ever merges.
+  nightly:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - run: dotnet restore --locked-mode
+
+      - name: Mutation, in full
+        run: ./scripts/mutation.sh
+
+      - name: Publish the score
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          ./scripts/_mutation-store.sh publish
