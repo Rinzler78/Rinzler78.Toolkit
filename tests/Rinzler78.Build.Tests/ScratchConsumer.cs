@@ -57,9 +57,14 @@ internal sealed class ScratchConsumer : IDisposable
     /// The value MSBuild evaluates for <paramref name="name"/> in this project, empty when
     /// the property is not set: what the contract *does*, not what its text says.
     /// </summary>
-    public async Task<string> PropertyAsync(string name)
+    public async Task<string> PropertyAsync(string name, string? framework = null)
     {
-        var result = await RunAsync("msbuild", $"-getProperty:{name}").ConfigureAwait(false);
+        // For one slice of a multi-targeted project: the inner build is evaluated with
+        // its own TargetFramework, as the outer build would dispatch it.
+        string[] arguments = framework is null
+            ? [$"-getProperty:{name}"]
+            : [$"-getProperty:{name}", $"-p:TargetFramework={framework}"];
+        var result = await RunAsync("msbuild", arguments).ConfigureAwait(false);
         return result.Output.Trim();
     }
 

@@ -49,6 +49,44 @@ public class TrimContractTests
         analyzer.Should().NotBe("true");
     }
 
+    // net6.0 has trimming but not the AOT analysers: IsAotCompatible there switches the
+    // trim checks off, so a Committed library would look enforced and not be.
+    [Fact]
+    public async Task A_committed_project_on_net6_is_trimmable_but_not_marked_aot_compatible()
+    {
+        var (trimmable, aot, _) = await EvaluateAsync(
+            "<TargetFramework>net6.0</TargetFramework><RinzlerTrimContract>Committed</RinzlerTrimContract>");
+
+        trimmable.Should().Be("true");
+        aot.Should().NotBe("true");
+    }
+
+    [Theory]
+    [InlineData("net7.0")]
+    [InlineData("net8.0")]
+    public async Task A_committed_project_is_aot_compatible_from_net7(string framework)
+    {
+        var (trimmable, aot, _) = await EvaluateAsync(
+            $"<TargetFramework>{framework}</TargetFramework><RinzlerTrimContract>Committed</RinzlerTrimContract>");
+
+        trimmable.Should().Be("true");
+        aot.Should().Be("true");
+    }
+
+    [Theory]
+    [InlineData("netstandard2.0", "")]
+    [InlineData("net6.0", "true")]
+    [InlineData("net8.0", "true")]
+    public async Task Each_slice_of_a_multi_targeted_project_gets_what_its_framework_supports(string slice, string trimmable)
+    {
+        using var consumer = new ScratchConsumer(
+            "<TargetFramework />\n<TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks><RinzlerTrimContract>Committed</RinzlerTrimContract>");
+
+        var value = await consumer.PropertyAsync("IsTrimmable", slice);
+
+        value.Should().Be(trimmable);
+    }
+
     [Theory]
     [InlineData("Committed")]
     [InlineData("Analyzed")]
