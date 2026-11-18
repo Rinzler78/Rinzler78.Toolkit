@@ -16,7 +16,7 @@ namespace Rinzler78.Build.Tasks;
 /// </summary>
 public sealed class InspectAssembly : Microsoft.Build.Utilities.Task
 {
-    private static readonly Regex BareDouble = new(@"\bdouble\b", RegexOptions.CultureInvariant);
+    private static readonly Regex BareDouble = new(@"(?<![.\w])double(?![\w.])", RegexOptions.CultureInvariant);
 
     /// <summary>Gets or sets the compiled assembly to inspect.</summary>
     [Required]
@@ -251,7 +251,8 @@ public sealed class InspectAssembly : Microsoft.Build.Utilities.Task
 
         public string GetPointerType(string elementType) => $"{elementType}*";
 
-        public string GetFunctionPointerType(MethodSignature<string> signature) => "fnptr";
+        public string GetFunctionPointerType(MethodSignature<string> signature) =>
+            $"fnptr({string.Join(",", signature.ParameterTypes.Prepend(signature.ReturnType))})";
 
         public string GetGenericMethodParameter(object? genericContext, int index) => $"!!{index}";
 

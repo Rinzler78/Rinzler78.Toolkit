@@ -68,6 +68,41 @@ public class CompiledAssemblyInspectionTests
     }
 
     [Fact]
+    public async Task A_double_in_a_function_pointer_signature_is_found()
+    {
+        var result = await BuildAsync(
+            Api("/// <summary>m</summary>\n    public unsafe void Call(delegate*<double, void> callback) { }"),
+            OwnsSurface + "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
+
+        result.Succeeded.Should().BeFalse();
+        result.Output.Should().Contain("Place.Call");
+    }
+
+    [Fact]
+    public async Task A_namespace_that_happens_to_be_called_double_is_not_a_double()
+    {
+        var result = await BuildAsync("""
+            namespace Acme.@double
+            {
+                /// <summary>A thing.</summary>
+                public class Thing { }
+            }
+
+            namespace Geo
+            {
+                /// <summary>A holder.</summary>
+                public class Holder
+                {
+                    /// <summary>m</summary>
+                    public Acme.@double.Thing Make() => new();
+                }
+            }
+            """, OwnsSurface);
+
+        result.Succeeded.Should().BeTrue(result.Output);
+    }
+
+    [Fact]
     public async Task A_double_in_the_public_member_of_a_nested_public_type_or_an_interface_is_found()
     {
         var nested = await BuildAsync("""
