@@ -6,6 +6,12 @@
   <ItemGroup>
     <!-- Versions live here, never in a specification. -->
   </ItemGroup>
+  <ItemGroup Label="Build tasks">
+    <!-- A task is compiled against one MSBuild and runs on that one and every later one: the
+         floor is the Visual Studio 2022 line, version 17.14. -->
+    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="17.14.28" />
+    <PackageVersion Include="System.Reflection.Metadata" Version="11.0.0" />
+  </ItemGroup>
   <ItemGroup Label="Testing">
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />

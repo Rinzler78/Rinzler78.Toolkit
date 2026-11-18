@@ -10,6 +10,8 @@ xharness
 Trimmable
 Aot
 xamarinios
+Assem
+fnptr
 Mtouch
 proguard
 MSBUILDFAILONDRIVEENUMERATINGWILDCARD

@@ -60,6 +60,17 @@ internal sealed class ScratchConsumer : IDisposable
         File.WriteAllText(path, content);
     }
 
+    // The tasks built in the configuration this test run was built in: a Debug run never reads a
+    // Release build of them, which may be older.
+    private static string TasksAssembly => Path.Combine(
+        RepositoryRoot,
+        "src",
+        "Rinzler78.Build.Tasks",
+        "bin",
+        AppContext.BaseDirectory.Contains($"{Path.DirectorySeparatorChar}Release{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ? "Release" : "Debug",
+        "netstandard2.0",
+        "Rinzler78.Build.Tasks.dll");
+
     public Task<BuildResult> BuildAsync() => RunAsync("build");
 
     /// <summary>
@@ -103,6 +114,9 @@ internal sealed class ScratchConsumer : IDisposable
         }
 
         start.Environment[SdkVariable] = Path.Combine(RepositoryRoot, "src", "Rinzler78.Build", "Sdk");
+        // The tasks live in a folder of the package that a checkout does not have: the build of
+        // the tasks project is where a checkout keeps them.
+        start.Environment["RinzlerBuildTasks"] = TasksAssembly;
 
         using var process = Process.Start(start)
             ?? throw new InvalidOperationException("dotnet could not be started.");

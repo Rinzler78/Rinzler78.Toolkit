@@ -79,6 +79,8 @@
          RinzlerForbiddenDependency    — package identities this layer may not take
          RinzlerRequiredAnalyzer       — analysers this project must reference
          RinzlerRequiredDescription    — a fragment every package description must carry
+         RinzlerForbidBareDouble       — true: no bare double in the public API of this layer
+         RinzlerAllowBareDouble        — types allowed to take one (RinzlerAllowBareDoubleNamespace: namespaces)
          RinzlerRequiredReadmeFragment — fragments the README of a package must carry
          RinzlerCoverageAdr            — the ADR arguing a Reduced or Exempt contract
 

@@ -280,6 +280,30 @@
     <Touch Files="$(IntermediateOutputPath)rinzler-suppressions.stamp" AlwaysCreate="true" />
   </Target>
 
+  <!-- What only the compiled assembly can say. A layer that owns its surface declares
+       RinzlerForbidBareDouble; a layer with forbidden dependencies is checked against
+       what the assembly really references, not only against the packages it declared:
+       a framework assembly reaches a contract through no PackageReference. The task reads
+       metadata and never loads the assembly. Each is inert where nothing is declared.
+
+       The path is relative to the build folder the file is imported from, because the same
+       file is also served from buildMultiTargeting. -->
+  <PropertyGroup>
+    <RinzlerBuildTasks Condition="'$(RinzlerBuildTasks)' == ''">$(MSBuildThisFileDirectory)../build/tasks/Rinzler78.Build.Tasks.dll</RinzlerBuildTasks>
+  </PropertyGroup>
+  <UsingTask TaskName="Rinzler78.Build.Tasks.InspectAssembly" AssemblyFile="$(RinzlerBuildTasks)" />
+
+  <Target Name="RinzlerInspectCompiledAssembly" AfterTargets="CoreCompile"
+          Condition="'$(DesignTimeBuild)' != 'true' AND ('$(RinzlerForbidBareDouble)' == 'true' OR '@(RinzlerForbiddenDependency)' != '')">
+    <Error Condition="!Exists('$(RinzlerBuildTasks)')"
+           Text="The Rinzler78.Build tasks assembly is missing at $(RinzlerBuildTasks): the package is incomplete." />
+    <Rinzler78.Build.Tasks.InspectAssembly Assembly="@(IntermediateAssembly->'%(FullPath)')"
+                                           ForbiddenReferences="@(RinzlerForbiddenDependency)"
+                                           ForbidBareDouble="$(RinzlerForbidBareDouble)"
+                                           AllowBareDouble="@(RinzlerAllowBareDouble)"
+                                           AllowBareDoubleNamespace="@(RinzlerAllowBareDoubleNamespace)" />
+  </Target>
+
   <!-- A coverage contract below Enforced is a decision, and a decision has a record: the
        project names the ADR that argues it. A project shipping no package — a test
        project, a trimming application, a demonstration — has no surface to cover and
