@@ -13,6 +13,12 @@
 source "$(dirname "${BASH_SOURCE[0]}")/../_common.sh"
 
 readonly BUILD_DIR="$REPO_ROOT/src/Rinzler78.Build/build"
+
+# A checkout has no build/tasks folder: the tasks the targets call are where their own
+# build leaves them, and the scratch consumers read that path from the environment.
+run dotnet build "$REPO_ROOT/src/Rinzler78.Build.Tasks" --configuration "$CONFIGURATION" --nologo --verbosity quiet
+RinzlerBuildTasks="$REPO_ROOT/src/Rinzler78.Build.Tasks/bin/$CONFIGURATION/netstandard2.0/Rinzler78.Build.Tasks.dll"
+export RinzlerBuildTasks
 scratch=$(mktemp -d)
 trap 'rm -rf "$scratch"' EXIT
 

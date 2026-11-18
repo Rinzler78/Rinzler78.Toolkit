@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The MSBuild tasks of Rinzler78.Build, compiled once and shipped under build/tasks/.
+       They read compiled assemblies through metadata only, so they work on every target
+       framework, platform ones included. Not a package of its own: Rinzler78.Build carries it. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RinzlerLayer>Toolchain</RinzlerLayer>
+    <!-- An MSBuild task is loaded from the folder it ships in: its dependencies travel with it. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <RinzlerCoverageContract>Exempt</RinzlerCoverageContract>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The compiler's own copy of MSBuild provides these types at run time. -->
+    <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="System.Reflection.Metadata" />
+  </ItemGroup>
+
+</Project>

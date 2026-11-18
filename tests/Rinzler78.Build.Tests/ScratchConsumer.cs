@@ -60,6 +60,12 @@ internal sealed class ScratchConsumer : IDisposable
         File.WriteAllText(path, content);
     }
 
+    private static string TasksAssembly =>
+        new DirectoryInfo(Path.Combine(RepositoryRoot, "src", "Rinzler78.Build.Tasks", "bin"))
+            .EnumerateFiles("Rinzler78.Build.Tasks.dll", SearchOption.AllDirectories)
+            .OrderByDescending(file => file.LastWriteTimeUtc)
+            .First().FullName;
+
     public Task<BuildResult> BuildAsync() => RunAsync("build");
 
     /// <summary>
@@ -103,6 +109,9 @@ internal sealed class ScratchConsumer : IDisposable
         }
 
         start.Environment[SdkVariable] = Path.Combine(RepositoryRoot, "src", "Rinzler78.Build", "Sdk");
+        // The tasks live in a folder of the package that a checkout does not have: the build of
+        // the tasks project is where a checkout keeps them.
+        start.Environment["RinzlerBuildTasks"] = TasksAssembly;
 
         using var process = Process.Start(start)
             ?? throw new InvalidOperationException("dotnet could not be started.");

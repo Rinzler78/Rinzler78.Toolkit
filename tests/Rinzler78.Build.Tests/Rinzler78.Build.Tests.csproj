@@ -22,6 +22,9 @@
          src/Rinzler78.Build selects these tests, and so that the package builds first. -->
     <ProjectReference Include="../../src/Rinzler78.Build/Rinzler78.Build.csproj"
                       ReferenceOutputAssembly="false" />
+    <!-- The inspection task, built so a scratch consumer can load it. -->
+    <ProjectReference Include="../../src/Rinzler78.Build.Tasks/Rinzler78.Build.Tasks.csproj"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

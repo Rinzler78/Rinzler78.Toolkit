@@ -177,7 +177,10 @@ is a reviewable pull request in the repository that owns it.
 |---|---|
 | `RinzlerKnownLayers` | The accepted layer vocabulary. Without it, layer checks are inert. |
 | `RinzlerLayer` | The layer this project sits in, validated against the vocabulary. |
-| `RinzlerForbiddenDependency` | Package identities this layer may not declare a dependency on. |
+| `RinzlerForbiddenDependency` | Package identities this layer may not declare a dependency on. The compiled assembly is checked too: it may not reference an assembly of that name, a framework one included. |
+| `RinzlerForbidBareDouble` | `true` for a layer that owns its public surface: a bare `double` — a parameter, a return type, a property or a field, also by reference or nullable — in a public or protected member of a public type fails the build, read from the compiled assembly. |
+| `RinzlerAllowBareDouble` | Items: full names of types allowed to take a bare double (their nested types too), such as a value object validating its own input. |
+| `RinzlerAllowBareDoubleNamespace` | Items: namespaces whose types are allowed to take a bare double. |
 | `RinzlerRequiredAnalyzer` | Analysers this project must reference, each with a `Because`. |
 | `RinzlerRequiredDescription` | A fragment every package description must carry. |
 | `RinzlerRequiredReadmeFragment` | Items: text the `README.md` (or `RinzlerReadme`) of a package-shipping project must contain. A fragment cannot contain a semicolon. |

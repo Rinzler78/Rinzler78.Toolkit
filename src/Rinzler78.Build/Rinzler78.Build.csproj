@@ -32,4 +32,21 @@
     <None Include="../../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
+  <!-- The tasks the targets call, published with their own dependencies and carried under
+       build/tasks/. Referenced for build order only: nothing of it is compiled in here. -->
+  <ItemGroup>
+    <ProjectReference Include="../Rinzler78.Build.Tasks/Rinzler78.Build.Tasks.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Target Name="RinzlerPublishTasks" BeforeTargets="_GetPackageFiles">
+    <PropertyGroup>
+      <_TasksDir>$(MSBuildProjectDirectory)/$(IntermediateOutputPath)tasks/</_TasksDir>
+    </PropertyGroup>
+    <MSBuild Projects="../Rinzler78.Build.Tasks/Rinzler78.Build.Tasks.csproj" Targets="Publish"
+             Properties="Configuration=$(Configuration);PublishDir=$(_TasksDir)" />
+    <ItemGroup>
+      <None Include="$(_TasksDir)*.dll" Pack="true" PackagePath="build/tasks/" />
+    </ItemGroup>
+  </Target>
+
 </Project>
