@@ -180,9 +180,15 @@ is a reviewable pull request in the repository that owns it.
 | `RinzlerForbiddenDependency` | Package identities this layer may not declare a dependency on. |
 | `RinzlerRequiredAnalyzer` | Analysers this project must reference, each with a `Because`. |
 | `RinzlerRequiredDescription` | A fragment every package description must carry. |
+| `RinzlerRequiredReadmeFragment` | Items: text the `README.md` (or `RinzlerReadme`) of a package-shipping project must contain. A fragment cannot contain a semicolon. |
+| `RinzlerCoverageAdr` | The ADR file, relative to the project, that argues a `Reduced` or `Exempt` coverage contract. Required of a project that ships a package; a test project owes none. |
 | `RinzlerTrimContract` | `Committed`, `Analyzed` or `OutOfScope`. |
 | `RinzlerCoverageContract` | `Enforced`, `Reduced` or `Exempt`. |
 | `RinzlerCostlyOptimisations` | `true` by default. `false` keeps the costly Release optimisations (ahead-of-time compilation, LLVM) off: the generated continuous integration sets it so on a feature-branch pull request, and leaves it on for the pull request into `master`, `master` itself and the release. It takes effect in the builds that package or publish an application. |
+
+A `ProjectReference` that resolves into another repository — the tree under the nearest
+`Directory.Packages.props`, so a submodule counts — fails the build, in a repository
+that has such a marker. Cross-repository dependencies are package references.
 
 In Release, `Rinzler78.Build` also enables what the project can enable, under each
 platform's own property names: R8 and profiled ahead-of-time compilation on Android,

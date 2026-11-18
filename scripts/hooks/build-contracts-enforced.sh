@@ -93,7 +93,10 @@ build_succeeds 'a conforming project'
 
 build_refuses 'invalid coverage contract' 'RinzlerCoverageContract must be' -p:RinzlerCoverageContract=Bogus
 build_refuses 'invalid trim contract' 'RinzlerTrimContract must be' -p:RinzlerTrimContract=Bogus
-build_succeeds 'declared contracts' -p:RinzlerTrimContract=Committed -p:RinzlerCoverageContract=Reduced
+printf '# ADR\n' >"$scratch/ADR.md"
+build_refuses 'reduced coverage without an ADR' 'requires RinzlerCoverageAdr' -p:RinzlerCoverageContract=Reduced
+build_succeeds 'declared contracts' -p:RinzlerTrimContract=Committed -p:RinzlerCoverageContract=Reduced \
+  -p:RinzlerCoverageAdr="$scratch/ADR.md"
 
 write_consumer Contracts "$ANALYSER$HTTP"
 build_refuses 'outward dependency' 'may not depend on'

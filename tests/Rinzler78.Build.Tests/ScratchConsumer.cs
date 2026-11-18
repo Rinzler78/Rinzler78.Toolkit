@@ -11,7 +11,7 @@ internal sealed class ScratchConsumer : IDisposable
     private readonly string _directory =
         Path.Combine(Path.GetTempPath(), "rinzler-build-tests", Guid.NewGuid().ToString("N"));
 
-    public ScratchConsumer(string properties)
+    public ScratchConsumer(string properties, string items = "")
     {
         Directory.CreateDirectory(_directory);
 
@@ -29,6 +29,7 @@ internal sealed class ScratchConsumer : IDisposable
                 <IsPackable>false</IsPackable>
                 {properties}
               </PropertyGroup>
+              {items}
               <Import Project="$({SdkVariable})/Sdk.targets" />
             </Project>
             """);
@@ -49,6 +50,14 @@ internal sealed class ScratchConsumer : IDisposable
             return directory?.FullName
                 ?? throw new InvalidOperationException("The tests run outside the Rinzler78.Toolkit checkout.");
         }
+    }
+
+    /// <summary>Writes a file next to the consumer's project, creating its folder.</summary>
+    public void Write(string relativePath, string content)
+    {
+        var path = Path.Combine(_directory, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, content);
     }
 
     public Task<BuildResult> BuildAsync() => RunAsync("build");
