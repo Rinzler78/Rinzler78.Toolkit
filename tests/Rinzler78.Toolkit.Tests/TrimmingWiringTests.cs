@@ -38,9 +38,9 @@ public sealed class TrimmingWiringTests
     [Fact]
     public void The_sizes_are_posted_on_the_pull_request_whatever_the_verdict_and_replace_the_previous_post()
     {
-        Workflow.Should().Contain("if: always()").And.Contain("artifacts/trimming/summary.md");
+        Workflow.Should().Contain("!cancelled()").And.Contain("artifacts/trimming/summary.md");
         Workflow.Should().Contain("trimming-summary", "the post is found again by its marker, so that a push edits it rather than adding another");
-        Workflow.IndexOf("if: always()", StringComparison.Ordinal)
+        Workflow.IndexOf("!cancelled()", StringComparison.Ordinal)
             .Should().BeGreaterThan(Workflow.IndexOf("./scripts/trimming.sh --check --aot", StringComparison.Ordinal));
     }
 

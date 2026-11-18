@@ -55,9 +55,9 @@ public sealed class TrimmingTests : IDisposable
                 [[ $unmarked == true ]] && kind=unmarked
                 size=$(cat "$PWD/.sizes/$library.$kind" 2>/dev/null || { [[ $kind == marked ]] && echo 1000 || echo 5000; })
                 mkdir -p "$output"
-                head -c "$size" /dev/zero >"$output/$library.dll"
+                if [[ ! -f "$PWD/.no-dll" ]]; then head -c "$size" /dev/zero >"$output/$library.dll"; fi
                 head -c 100000 /dev/zero >"$output/System.Runtime.dll"
-                if [[ $aot == true ]]; then head -c 300000 /dev/zero >"$output/$app"; fi
+                if [[ $aot == true && ! -f "$PWD/.no-binary" ]]; then head -c 300000 /dev/zero >"$output/$app"; fi
                 if [[ -f "$PWD/.rewrite-locks" ]]; then
                   echo rewritten >"$PWD/src/$library/packages.lock.json"
                   echo created >"$PWD/tests/$library.Trimming/packages.lock.json"
@@ -221,16 +221,85 @@ public sealed class TrimmingTests : IDisposable
     }
 
     [Fact]
-    public void Check_fails_when_the_marked_publication_grew_by_more_than_five_percent()
+    public void The_published_payload_is_information_and_never_the_verdict()
     {
+        // 5 % of a framework of megabytes is a hundred times a library of kilobytes: a
+        // payload gate would pass any regression of the library, and trip on a runtime
+        // patch. Only the library column gates.
         Library("Alpha", marked: 1000, unmarked: 5000);
-        _repository.Write("shim-note", "the library alone is steady, the publication is not");
-        Readme(Block("| Alpha | 1000 | 5000 | 90000 | 105000 |"));
+        Readme(Block("| Alpha | 1000 | 5000 | 50000 | 105000 |"));
+
+        _repository.Script("trimming.sh", "--check").Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("n/a")]
+    [InlineData("")]
+    [InlineData("1,000")]
+    public void Check_fails_when_the_readme_records_no_number_for_the_library(string cell)
+    {
+        Library("Alpha");
+        Readme(Block($"| Alpha | {cell} | 5000 | 101000 | 105000 |"));
 
         var result = _repository.Script("trimming.sh", "--check");
 
+        result.Succeeded.Should().BeFalse("a figure that cannot be read is not a figure that holds");
+        result.Error.Should().Contain("Alpha").And.Contain("records no size");
+    }
+
+    [Fact]
+    public void A_publication_without_the_library_assembly_names_that_and_not_a_trimming_problem()
+    {
+        Library("Alpha");
+        _repository.Write(".no-dll", "yes");
+        Readme("# Readme\n");
+
+        var result = _repository.Script("trimming.sh", "--write");
+
         result.Succeeded.Should().BeFalse();
-        result.Error.Should().Contain("Alpha").And.Contain("published");
+        result.Error.Should().Contain("Alpha").And.Contain("Alpha.dll").And.Contain("missing");
+        result.Error.Should().NotContain("trims nothing");
+        ReadmeText.Should().NotContain(Start, "nothing is recorded from a measurement that failed");
+    }
+
+    [Fact]
+    public void A_native_publication_without_its_binary_is_a_failure_and_not_an_empty_size()
+    {
+        Library("Alpha");
+        _repository.Write(".no-binary", "yes");
+        Readme(Block("| Alpha | 1000 | 5000 | 101000 | 105000 |"));
+
+        var result = _repository.Script("trimming.sh", "--check", "--aot");
+
+        result.Succeeded.Should().BeFalse();
+        result.Error.Should().Contain("Alpha").And.Contain("native");
+        File.ReadAllText(Path.Combine(_repository.Root, "artifacts/trimming/summary.md")).Should().NotContain("|  |");
+    }
+
+    [Fact]
+    public void A_readme_with_windows_line_endings_keeps_one_block_however_often_it_is_written()
+    {
+        Library("Alpha");
+        // As git writes it on a machine with autocrlf: the markers carry the carriage return too.
+        Readme("# Readme\r\n\r\n" + Block("| Alpha | 1 | 2 | 3 | 4 |").Replace("\n", "\r\n", StringComparison.Ordinal));
+
+        _repository.Script("trimming.sh", "--write").Succeeded.Should().BeTrue();
+        _repository.Script("trimming.sh", "--write").Succeeded.Should().BeTrue();
+
+        ReadmeText.Split(Start, StringSplitOptions.None).Length.Should().Be(2);
+        _repository.Script("trimming.sh", "--check").Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_readme_carrying_two_blocks_is_left_with_one()
+    {
+        Library("Alpha");
+        Readme($"{Block("| Alpha | 1 | 2 | 3 | 4 |")}\nMiddle.\n\n{Block("| Alpha | 5 | 6 | 7 | 8 |")}");
+
+        _repository.Script("trimming.sh", "--write").Succeeded.Should().BeTrue();
+
+        ReadmeText.Split(Start, StringSplitOptions.None).Length.Should().Be(2);
+        ReadmeText.Should().Contain("Middle.").And.Contain("| Alpha | 1000 |");
     }
 
     [Fact]

@@ -36,10 +36,12 @@
 # identifier when RinzlerAot is true, and a native build needs that host's toolchain
 # (clang, and zlib headers on Linux).
 #
-# What is compared is the marked library and the marked publication, in bytes of managed
-# assemblies. The README may be a little off (5 %), never more: a bigger payload than the
-# one recorded is a regression, and a promotion pull request refuses it. A library whose
-# marking trims nothing has no contract worth the name, and fails too.
+# What is compared is the marked library, in bytes. The README may be a little off (5 %),
+# never more: a bigger library than the one recorded is a regression, and a promotion pull
+# request refuses it. A library whose marking trims nothing has no contract worth the
+# name, and fails too. The published payload is recorded as information and gates nothing:
+# 5 % of a framework of megabytes is a hundred times a library of kilobytes, so a payload
+# gate would pass any regression of the library and trip on a runtime patch.
 #
 # The size of a WASM payload or an IPA belongs to the head that builds one. This measures
 # the trimmed managed payload, which is what the library controls.
@@ -57,7 +59,8 @@ readonly README="$REPO_ROOT/README.md"
 # The lock files as they stand, and as they were put back: a measurement leaves the
 # repository the way it found it.
 snapshot_locks() {
-  locks_snapshot=$(mktemp -d)
+  locks_snapshot="$OUTPUT/locks"
+  mkdir -p "$locks_snapshot"
   local file
   while IFS= read -r -d '' file; do
     mkdir -p "$locks_snapshot/$(dirname "$file")"
@@ -138,6 +141,15 @@ measure_project() {
     problem "$name: the trimming application does not publish trimmed, library unmarked"
     return 0
   }
+  # A publication without the assembly is a different problem from a library that trims
+  # nothing, and a size read from a file that is not there is not a size.
+  local directory
+  for directory in "$marked" "$unmarked"; do
+    [[ -f "$directory/$assembly.dll" ]] || {
+      problem "$name: $assembly.dll is missing from the publication in $directory: the assembly name is not the one published, or the trimmer removed it"
+      return 0
+    }
+  done
   printf '%s %s %s %s %s\n' "$name" \
     "$(file_bytes "$marked/$assembly.dll")" "$(file_bytes "$unmarked/$assembly.dll")" \
     "$(dll_bytes "$marked")" "$(dll_bytes "$unmarked")" >>"$rows"
@@ -164,16 +176,20 @@ render_block() {
   printf '%s\n' "$END"
 }
 
-# The README's own block replaced where it stands, or appended when it has none. What
-# the author wrote around it is never touched.
+# The README's own block, found whatever its line endings: a checkout on Windows turns
+# the markers into "<marker>\r", which no exact comparison would ever match.
+has_block() { tr -d '\r' <"$README" | grep -qxF "$START"; }
+
+# The README's own block replaced where it stands, or appended when it has none, and one
+# block only, however many there were. What the author wrote around it is never touched.
 write_block() {
-  local block=$1 result
+  local block=$1 result="$OUTPUT/README.new"
   [[ -f "$README" ]] || fail "README.md not found: nowhere to record the sizes"
-  result=$(mktemp)
-  if grep -qxF "$START" "$README"; then
+  if has_block; then
     awk -v start="$START" -v end="$END" -v blockfile="$block" '
-      $0 == start { while ((getline line < blockfile) > 0) print line; skipping = 1; next }
-      skipping && $0 == end { skipping = 0; next }
+      { line = $0; sub(/\r$/, "", line) }
+      line == start { if (!written) { while ((getline text < blockfile) > 0) print text; close(blockfile); written = 1 } skipping = 1; next }
+      skipping && line == end { skipping = 0; next }
       !skipping { print }' "$README" >"$result"
   else
     {
@@ -183,19 +199,19 @@ write_block() {
     } >"$result"
   fi
   cat "$result" >"$README"
-  rm -f "$result"
 }
 
-# "<name> <marked library> <unmarked library> <marked published> <unmarked published>"
-# for each row of the README's block.
-recorded_rows() {
-  awk -F'|' -v start="$START" -v end="$END" '
-    $0 == start { inside = 1; next }
-    $0 == end { inside = 0 }
+# One cell of the README's block for a project, "#" in front so that an empty cell is not
+# taken for a missing row, and nothing at all when there is no row. <column> counts awk
+# fields: 3 is the marked library, 5 the marked payload.
+recorded_cell() {
+  awk -F'|' -v start="$START" -v end="$END" -v name="$1" -v column="$2" '
+    { sub(/\r$/, "") }
+    $0 == start && !done { inside = 1; next }
+    $0 == end && inside { inside = 0; done = 1 }
     inside && NF >= 7 {
       for (i = 2; i <= 6; i++) gsub(/^[ \t]+|[ \t]+$/, "", $i)
-      if ($2 == "Project" || $2 ~ /^-+:?$/) next
-      print $2, $3, $4, $5, $6
+      if ($2 == name) { print "#" $column; exit }
     }' "$README"
 }
 
@@ -203,23 +219,25 @@ recorded_rows() {
 grew() { ((($1) * 100 > ($2) * (100 + TOLERANCE_PERCENT))); }
 
 check_block() {
-  local name library_marked _ published_marked recorded_library recorded_published found
-  grep -qxF "$START" "$README" ||
+  local name library_marked recorded
+  has_block ||
     {
       problem "README.md records no trimming measurement: run scripts/trimming.sh --write"
       return 0
     }
-  while read -r name library_marked _ published_marked _; do
-    found=$(recorded_rows | awk -v name="$name" '$1 == name { print $2, $4; exit }')
-    [[ -n "$found" ]] || {
+  while read -r name library_marked _ _ _; do
+    recorded=$(recorded_cell "$name" 3)
+    [[ -n "$recorded" ]] || {
       problem "$name is not in the trimming block of README.md: run scripts/trimming.sh --write"
       continue
     }
-    read -r recorded_library recorded_published <<<"$found"
-    grew "$library_marked" "$recorded_library" &&
-      problem "$name: the marked library weighs $library_marked bytes, $recorded_library recorded: more than $TOLERANCE_PERCENT % over"
-    grew "$published_marked" "$recorded_published" &&
-      problem "$name: the marked published payload weighs $published_marked bytes, $recorded_published recorded: more than $TOLERANCE_PERCENT % over"
+    recorded=${recorded#\#}
+    [[ "$recorded" =~ ^[0-9]+$ ]] || {
+      problem "$name: README.md records no size for the marked library (found '$recorded'): run scripts/trimming.sh --write"
+      continue
+    }
+    grew "$library_marked" "$recorded" &&
+      problem "$name: the marked library weighs $library_marked bytes, $recorded recorded: more than $TOLERANCE_PERCENT % over"
   done <"$rows"
   return 0
 }
@@ -240,14 +258,19 @@ publish_aot() {
       continue
     }
     assembly=$(property "$app" AssemblyName)
-    printf '%s %s\n' "$name" "$(file_bytes "$directory/${assembly:-$name.Trimming}")" >>"$aot_rows"
-  done <"$committed"
+    assembly=${assembly:-$name.Trimming}
+    [[ -f "$directory/$assembly" ]] || {
+      problem "$name: the native publication produced no $assembly"
+      continue
+    }
+    printf '%s %s\n' "$name" "$(file_bytes "$directory/$assembly")" >>"$aot_rows"
+  done <<<"$committed"
 }
 
 # What a pull request posts: the sizes, what the README records beside them when the run
 # compares, and the verdict.
 write_summary() {
-  local mode=$1 name library_marked library_unmarked published_marked published_unmarked bytes recorded
+  local mode=$1 name library_marked library_unmarked published_marked published_unmarked bytes recorded_library recorded_payload
   {
     printf '<!-- trimming-summary -->\n### Trimming\n\nManaged payload of each trimming test application, in bytes.\n\n'
     if [[ $mode == compare ]]; then
@@ -260,8 +283,9 @@ write_summary() {
     while read -r name library_marked library_unmarked published_marked published_unmarked; do
       printf '| %s | %s | %s | %s | %s |' "$name" "$library_marked" "$library_unmarked" "$published_marked" "$published_unmarked"
       if [[ $mode == compare ]]; then
-        recorded=$(recorded_rows | awk -v name="$name" '$1 == name { print $2 " | " $4; exit }')
-        printf ' %s |' "${recorded:-none | none}"
+        recorded_library=$(recorded_cell "$name" 3)
+        recorded_payload=$(recorded_cell "$name" 5)
+        printf ' %s | %s |' "${recorded_library#\#}" "${recorded_payload#\#}"
       fi
       printf '\n'
     done <"$rows"
@@ -299,19 +323,18 @@ main() {
     shift
   done
 
-  committed=$(mktemp)
-  committed_projects >"$committed"
-  [[ -s "$committed" ]] || {
-    rm -f "$committed"
+  committed=$(committed_projects)
+  [[ -n "$committed" ]] || {
     log 'no Committed library: nothing to measure'
     return 0
   }
 
-  snapshot_locks
-  # shellcheck disable=SC2064 # the snapshot directory is fixed now, on purpose
-  trap restore_locks EXIT
+  # Everything this writes, scratch files included, is under $OUTPUT, which the next run
+  # wipes: nothing is left in a temporary directory by a run that failed half way.
   rm -rf "$OUTPUT"
   mkdir -p "$OUTPUT"
+  snapshot_locks
+  trap restore_locks EXIT
   rows="$OUTPUT/rows.txt"
   aot_rows="$OUTPUT/aot.txt"
   : >"$rows"
@@ -320,17 +343,16 @@ main() {
   local project
   while IFS= read -r project; do
     measure_project "$project"
-  done <"$committed"
+  done <<<"$committed"
   check_benefit
 
   if ((failures == 0)); then
     case $mode in
       record)
         local block
-        block=$(mktemp)
+        block="$OUTPUT/block.md"
         render_block >"$block"
         write_block "$block"
-        rm -f "$block"
         log 'trimming sizes recorded in README.md'
         ;;
       compare) check_block ;;
@@ -339,7 +361,6 @@ main() {
   if [[ $aot == true ]]; then publish_aot; fi
 
   write_summary "$mode"
-  rm -f "$committed"
   ((failures == 0)) || fail "$failures trimming failure(s)"
   log 'the trimming gate holds'
 }

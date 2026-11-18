@@ -40,15 +40,16 @@ jobs:
 
       # The comment is found by its marker and edited, so that a push updates the sizes
       # instead of adding a second post. It runs on failure too: a regression is exactly
-      # when the sizes are wanted.
+      # when the sizes are wanted. A pull request from a fork has a read-only token and
+      # cannot be commented: a promotion comes from develop, which is not one.
       - name: Post the sizes
-        if: always() && hashFiles('artifacts/trimming/summary.md') != ''
+        if: ${{ !cancelled() && hashFiles('artifacts/trimming/summary.md') != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
         run: |
           comment=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PULL_REQUEST/comments" --paginate \
-            --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- trimming-summary -->")))][0].id // empty')
+            --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- trimming-summary -->")))][0].id // empty' | sed -n 1p)
           if [[ -n "$comment" ]]; then
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$comment" \
               --field body=@artifacts/trimming/summary.md
