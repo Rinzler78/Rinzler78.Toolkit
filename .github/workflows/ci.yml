@@ -40,9 +40,11 @@ jobs:
       - name: Restore, locked
         run: dotnet restore --locked-mode
 
-      # The costly optimisations (ahead-of-time compilation, LLVM) run on the promotion
-      # pull request into master and on master itself, never on a feature branch: the
-      # property is read by Rinzler78.Build, and the release workflow leaves it on.
+      # The policy of the costly optimisations (ahead-of-time compilation, LLVM): off on
+      # a feature branch, on for the pull request into master and for master itself. The
+      # property is read by Rinzler78.Build and takes effect in the builds that package
+      # or publish an application; a plain library build does not exercise it. The
+      # release workflow leaves it on.
       - name: Build
         run: ./scripts/build.sh
         env:

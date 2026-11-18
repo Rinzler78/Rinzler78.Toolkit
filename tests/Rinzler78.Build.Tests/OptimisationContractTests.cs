@@ -6,7 +6,10 @@ namespace Rinzler78.Build.Tests;
 /// <summary>
 /// The Release and Debug optimisation properties of the toolchain specification: Debug
 /// stays diagnosable, Release enables what the project can enable, and the costly
-/// optimisations can be switched off for a feature-branch build.
+/// optimisations can be switched off for a feature-branch build. The tests evaluate the
+/// properties this package sets; no platform SDK is imported, so they show that nothing here
+/// enables an optimisation in Debug (an unset property passes), not what a platform SDK
+/// later does with the values. The first real application build is task 1.11f.
 /// </summary>
 public class OptimisationContractTests
 {

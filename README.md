@@ -182,7 +182,7 @@ is a reviewable pull request in the repository that owns it.
 | `RinzlerRequiredDescription` | A fragment every package description must carry. |
 | `RinzlerTrimContract` | `Committed`, `Analyzed` or `OutOfScope`. |
 | `RinzlerCoverageContract` | `Enforced`, `Reduced` or `Exempt`. |
-| `RinzlerCostlyOptimisations` | `true` by default. `false` keeps the costly Release optimisations (ahead-of-time compilation, LLVM) off: the generated continuous integration sets it so on a feature-branch pull request, and leaves it on for the pull request into `master`, `master` itself and the release. |
+| `RinzlerCostlyOptimisations` | `true` by default. `false` keeps the costly Release optimisations (ahead-of-time compilation, LLVM) off: the generated continuous integration sets it so on a feature-branch pull request, and leaves it on for the pull request into `master`, `master` itself and the release. It takes effect in the builds that package or publish an application. |
 
 In Release, `Rinzler78.Build` also enables what the project can enable, under each
 platform's own property names: R8 and profiled ahead-of-time compilation on Android,
