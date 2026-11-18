@@ -190,6 +190,18 @@ A `ProjectReference` that resolves into another repository — the tree under th
 `Directory.Packages.props`, so a submodule counts — fails the build, in a repository
 that has such a marker. Cross-repository dependencies are package references.
 
+A suppression carries its reason. A `#pragma warning disable` needs it on the same line,
+after `//`, and a `SuppressMessage` a non-empty `Justification`; otherwise the build fails
+naming the file and the rule. Generated code under `obj/` is not scanned, and the match is a
+regular expression, so a directive written inside a string literal is read as a directive.
+
+Named target framework sets, so that a solution cannot disagree with itself:
+`RinzlerPortableTargetFrameworks`, `RinzlerModernTargetFrameworks`,
+`RinzlerXamarinTargetFrameworks`, `RinzlerAndroidTargetFrameworks`,
+`RinzlerIosTargetFrameworks`, `RinzlerWindowsTargetFrameworks`,
+`RinzlerMacCatalystTargetFrameworks`, and `RinzlerPlatformTargetFrameworks` (Xamarin,
+Android and iOS together). A project may override any of them.
+
 In Release, `Rinzler78.Build` also enables what the project can enable, under each
 platform's own property names: R8 and profiled ahead-of-time compilation on Android,
 LLVM on iOS, ahead-of-time compilation and compression on Blazor WebAssembly,

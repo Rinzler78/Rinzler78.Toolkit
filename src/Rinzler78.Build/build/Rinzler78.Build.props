@@ -46,6 +46,14 @@
   <PropertyGroup>
     <RinzlerPortableTargetFrameworks>netstandard2.0;net8.0;net9.0;net10.0</RinzlerPortableTargetFrameworks>
     <RinzlerModernTargetFrameworks>net8.0;net9.0;net10.0</RinzlerModernTargetFrameworks>
+    <RinzlerXamarinTargetFrameworks>monoandroid12.0;xamarinios10</RinzlerXamarinTargetFrameworks>
+    <RinzlerAndroidTargetFrameworks>net8.0-android;net9.0-android;net10.0-android</RinzlerAndroidTargetFrameworks>
+    <RinzlerIosTargetFrameworks>net8.0-ios;net9.0-ios;net10.0-ios</RinzlerIosTargetFrameworks>
+    <RinzlerWindowsTargetFrameworks>net10.0-windows10.0.19041.0</RinzlerWindowsTargetFrameworks>
+    <RinzlerMacCatalystTargetFrameworks>net10.0-maccatalyst</RinzlerMacCatalystTargetFrameworks>
+    <!-- A platform package: both Xamarin generations and the current Android and iOS
+         monikers. A Windows or Mac Catalyst head adds its own set. -->
+    <RinzlerPlatformTargetFrameworks>$(RinzlerXamarinTargetFrameworks);$(RinzlerAndroidTargetFrameworks);$(RinzlerIosTargetFrameworks)</RinzlerPlatformTargetFrameworks>
   </PropertyGroup>
 
   <!-- Costly optimisations (ahead-of-time compilation, LLVM) are on in Release unless a
