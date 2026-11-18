@@ -71,12 +71,15 @@
          RinzlerForbiddenDependency    — package identities this layer may not take
          RinzlerRequiredAnalyzer       — analysers this project must reference
          RinzlerRequiredDescription    — a fragment every package description must carry
+         RinzlerRequiredReadmeFragment — fragments the README of a package must carry
+         RinzlerCoverageAdr            — the ADR arguing a Reduced or Exempt contract
 
        Declaring none of them disables the corresponding check rather than failing:
        a build toolkit that refuses to build a project with no architecture would
        be unusable outside the one ecosystem it was written for. -->
   <PropertyGroup>
     <RinzlerLayer Condition="'$(RinzlerLayer)' == ''">Unassigned</RinzlerLayer>
+    <RinzlerReadme Condition="'$(RinzlerReadme)' == ''">README.md</RinzlerReadme>
   </PropertyGroup>
 
 </Project>

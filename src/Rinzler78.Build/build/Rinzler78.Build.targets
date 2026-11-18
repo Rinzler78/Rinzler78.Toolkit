@@ -187,6 +187,68 @@
            Text="The package description must contain: $(RinzlerRequiredDescription)" />
   </Target>
 
+  <!-- A required README fragment — a non-affiliation statement, a licence note — is the
+       README counterpart of the description fragment above: the mechanism lives here, the
+       text with the domain that owes it. It binds a project that ships a package, because
+       that README is what a consumer reads; a missing README fails like a README without
+       the text. A fragment is one item, so it cannot contain a semicolon. A quote is legal in a
+       fragment but not in the expression that searches for it, so both sides are compared
+       with the quote replaced by a private-use character, which no README carries. -->
+  <Target Name="RinzlerRequireReadmeFragment" BeforeTargets="Build"
+          DependsOnTargets="RinzlerCollectFacts"
+          Condition="'@(RinzlerRequiredReadmeFragment)' != '' AND '$(_RinzlerShipsPackage)' == 'true'">
+    <PropertyGroup>
+      <_RinzlerReadmePath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(RinzlerReadme)'))</_RinzlerReadmePath>
+      <_RinzlerReadmeText Condition="Exists('$(_RinzlerReadmePath)')">$([System.IO.File]::ReadAllText('$(_RinzlerReadmePath)').Replace("'", ''))</_RinzlerReadmeText>
+    </PropertyGroup>
+    <ItemGroup>
+      <_RinzlerFragment Include="@(RinzlerRequiredReadmeFragment->Replace(&quot;'&quot;, ''))" />
+    </ItemGroup>
+    <Error Condition="!Exists('$(_RinzlerReadmePath)')"
+           Text="$(RinzlerReadme) is missing: it must contain @(RinzlerRequiredReadmeFragment, '; ')." />
+    <Error Condition="Exists('$(_RinzlerReadmePath)') AND !$(_RinzlerReadmeText.Contains('%(_RinzlerFragment.Identity)'))"
+           Text="$(RinzlerReadme) must contain: $([System.String]::Copy('%(_RinzlerFragment.Identity)').Replace('', &quot;'&quot;))" />
+  </Target>
+
+  <!-- No project reference crosses a repository boundary. A repository is the tree under
+       the nearest Directory.Packages.props — every repository owns one, since central
+       package management is mandatory — so a submodule, which owns its own, is another
+       repository even though it sits inside this one's folder. A project outside any
+       such tree is foreign too. Where the referencing project has no boundary marker, no
+       policy is declared and nothing is checked. Paths are compared as written, so a
+       reference spelled through a filesystem alias of the project folder (macOS
+       /tmp for /private/tmp) is read as foreign: spell references relative. -->
+  <Target Name="RinzlerRefuseForeignProjectReference" BeforeTargets="ResolveProjectReferences"
+          Condition="'@(ProjectReference)' != ''">
+    <PropertyGroup>
+      <_RinzlerOwnBoundary>$([MSBuild]::GetDirectoryNameOfFileAbove('$(MSBuildProjectDirectory)', 'Directory.Packages.props'))</_RinzlerOwnBoundary>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_RinzlerOwnBoundary)' != ''">
+      <_RinzlerReferenced Include="@(ProjectReference->'%(FullPath)')">
+        <Boundary>$([MSBuild]::GetDirectoryNameOfFileAbove('%(RootDir)%(Directory)', 'Directory.Packages.props'))</Boundary>
+      </_RinzlerReferenced>
+    </ItemGroup>
+    <Error Condition="'@(_RinzlerReferenced)' != '' AND '%(_RinzlerReferenced.Boundary)' != '$(_RinzlerOwnBoundary)'"
+           Text="'$(MSBuildProjectName)' references %(_RinzlerReferenced.Identity), which belongs to another repository. Cross-repository dependencies are package references." />
+  </Target>
+
+  <!-- A coverage contract below Enforced is a decision, and a decision has a record: the
+       project names the ADR that argues it. A project shipping no package — a test
+       project, a trimming application, a demonstration — has no surface to cover and
+       owes none. -->
+  <Target Name="RinzlerRequireCoverageAdr" BeforeTargets="Build"
+          DependsOnTargets="RinzlerCollectFacts"
+          Condition="('$(RinzlerCoverageContract)' == 'Reduced' OR '$(RinzlerCoverageContract)' == 'Exempt') AND
+                     '$(_RinzlerShipsPackage)' == 'true' AND '$(IsTestProject)' != 'true'">
+    <PropertyGroup>
+      <_RinzlerAdrPath Condition="'$(RinzlerCoverageAdr)' != ''">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(RinzlerCoverageAdr)'))</_RinzlerAdrPath>
+    </PropertyGroup>
+    <Error Condition="'$(RinzlerCoverageAdr)' == ''"
+           Text="RinzlerCoverageContract $(RinzlerCoverageContract) requires RinzlerCoverageAdr: the ADR file that argues it." />
+    <Error Condition="'$(RinzlerCoverageAdr)' != '' AND !Exists('$(_RinzlerAdrPath)')"
+           Text="RinzlerCoverageAdr names $(RinzlerCoverageAdr), which does not exist." />
+  </Target>
+
   <!-- Two rules about a published surface, stopping where there is none.
 
        CS1591 asks for documentation: xUnit requires a test class to be public, and
