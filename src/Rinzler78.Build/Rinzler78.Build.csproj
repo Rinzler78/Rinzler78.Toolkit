@@ -42,6 +42,8 @@
     <PropertyGroup>
       <_TasksDir>$(MSBuildProjectDirectory)/$(IntermediateOutputPath)tasks/</_TasksDir>
     </PropertyGroup>
+    <!-- A dependency dropped or renamed since the last pack must not ship beside the new ones. -->
+    <RemoveDir Directories="$(_TasksDir)" />
     <MSBuild Projects="../Rinzler78.Build.Tasks/Rinzler78.Build.Tasks.csproj" Targets="Publish"
              Properties="Configuration=$(Configuration);PublishDir=$(_TasksDir)" />
     <ItemGroup>

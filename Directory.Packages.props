@@ -7,8 +7,8 @@
     <!-- Versions live here, never in a specification. -->
   </ItemGroup>
   <ItemGroup Label="Build tasks">
-    <!-- The oldest MSBuild a consumer of the package may run on: a task compiled against it
-         runs on every later one. -->
+    <!-- A task is compiled against one MSBuild and runs on that one and every later one: the
+         floor is the Visual Studio 2022 line, version 17.14. -->
     <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="17.14.28" />
     <PackageVersion Include="System.Reflection.Metadata" Version="11.0.0" />
   </ItemGroup>

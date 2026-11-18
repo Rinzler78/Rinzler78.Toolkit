@@ -60,11 +60,16 @@ internal sealed class ScratchConsumer : IDisposable
         File.WriteAllText(path, content);
     }
 
-    private static string TasksAssembly =>
-        new DirectoryInfo(Path.Combine(RepositoryRoot, "src", "Rinzler78.Build.Tasks", "bin"))
-            .EnumerateFiles("Rinzler78.Build.Tasks.dll", SearchOption.AllDirectories)
-            .OrderByDescending(file => file.LastWriteTimeUtc)
-            .First().FullName;
+    // The tasks built in the configuration this test run was built in: a Debug run never reads a
+    // Release build of them, which may be older.
+    private static string TasksAssembly => Path.Combine(
+        RepositoryRoot,
+        "src",
+        "Rinzler78.Build.Tasks",
+        "bin",
+        AppContext.BaseDirectory.Contains($"{Path.DirectorySeparatorChar}Release{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ? "Release" : "Debug",
+        "netstandard2.0",
+        "Rinzler78.Build.Tasks.dll");
 
     public Task<BuildResult> BuildAsync() => RunAsync("build");
 

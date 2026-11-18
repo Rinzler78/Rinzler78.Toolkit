@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Text.RegularExpressions;
 using System.Reflection.PortableExecutable;
 using Microsoft.Build.Framework;
 
@@ -15,6 +16,8 @@ namespace Rinzler78.Build.Tasks;
 /// </summary>
 public sealed class InspectAssembly : Microsoft.Build.Utilities.Task
 {
+    private static readonly Regex BareDouble = new(@"\bdouble\b", RegexOptions.CultureInvariant);
+
     /// <summary>Gets or sets the compiled assembly to inspect.</summary>
     [Required]
     public string Assembly { get; set; } = string.Empty;
@@ -55,7 +58,9 @@ public sealed class InspectAssembly : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
-    private static bool IsDouble(string type) => type is "double" or "double?" or "double&";
+    // A decoded type is a name tree written as text — `List<double>`, `double[]`, `ValueTuple<double,double>`,
+    // `double?` — so a double anywhere in it is a bare double in the signature.
+    private static bool IsDouble(string type) => BareDouble.IsMatch(type);
 
     private static bool IsVisible(MethodAttributes attributes) =>
         (attributes & MethodAttributes.MemberAccessMask) is MethodAttributes.Public or MethodAttributes.Family or MethodAttributes.FamORAssem;
@@ -165,8 +170,15 @@ public sealed class InspectAssembly : Microsoft.Build.Utilities.Task
 
             foreach (var handle in type.GetEvents())
             {
-                var pair = reader.GetEventDefinition(handle).GetAccessors();
+                var definition = reader.GetEventDefinition(handle);
+                var pair = definition.GetAccessors();
                 accessors.UnionWith(new[] { pair.Adder, pair.Remover, pair.Raiser }.Where(accessor => !accessor.IsNil));
+                var visible = new[] { pair.Adder, pair.Remover }.Any(accessor =>
+                    !accessor.IsNil && IsVisible(reader.GetMethodDefinition(accessor).Attributes));
+                if (visible && IsDouble(provider.GetTypeFromHandle(reader, definition.Type)))
+                {
+                    Report(name, "event", typeName, reader.GetString(definition.Name));
+                }
             }
 
             foreach (var handle in type.GetMethods().Where(handle => !accessors.Contains(handle)))
@@ -197,10 +209,18 @@ public sealed class InspectAssembly : Microsoft.Build.Utilities.Task
             typeName,
             member);
 
-    // Names are all the check needs: a primitive's keyword, a type's full name, and the two
-    // shapes that leave a double still a double — a by-reference one and a nullable one.
+    // Names are all the check needs: a primitive's keyword and a type's full name, composed
+    // with their generic arguments, array elements and by-reference marks.
     private sealed class NameProvider : ISignatureTypeProvider<string, object?>
     {
+        public string GetTypeFromHandle(MetadataReader reader, EntityHandle handle) => handle.Kind switch
+        {
+            HandleKind.TypeDefinition => GetTypeFromDefinition(reader, (TypeDefinitionHandle)handle, 0),
+            HandleKind.TypeReference => GetTypeFromReference(reader, (TypeReferenceHandle)handle, 0),
+            HandleKind.TypeSpecification => GetTypeFromSpecification(reader, null, (TypeSpecificationHandle)handle, 0),
+            _ => string.Empty,
+        };
+
         public string GetPrimitiveType(PrimitiveTypeCode typeCode) =>
             typeCode == PrimitiveTypeCode.Double ? "double" : typeCode.ToString();
 
@@ -219,11 +239,11 @@ public sealed class InspectAssembly : Microsoft.Build.Utilities.Task
             reader.GetTypeSpecification(handle).DecodeSignature(this, genericContext);
 
         public string GetGenericInstantiation(string genericType, ImmutableArray<string> typeArguments) =>
-            genericType == "System.Nullable`1" && typeArguments.Length == 1 && typeArguments[0] == "double"
-                ? "double?"
+            genericType == "System.Nullable`1" && typeArguments.Length == 1
+                ? $"{typeArguments[0]}?"
                 : $"{genericType}<{string.Join(",", typeArguments)}>";
 
-        public string GetByReferenceType(string elementType) => elementType == "double" ? "double&" : $"{elementType}&";
+        public string GetByReferenceType(string elementType) => $"{elementType}&";
 
         public string GetSZArrayType(string elementType) => $"{elementType}[]";
 

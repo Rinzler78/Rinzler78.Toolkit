@@ -49,6 +49,117 @@ public class CompiledAssemblyInspectionTests
     }
 
     [Theory]
+    [InlineData("/// <summary>m</summary>\n    public (double, double) Position() => (0, 0);", "Place.Position")]
+    [InlineData("/// <summary>m</summary>\n    public double[] Track() => [];", "Place.Track")]
+    [InlineData("/// <summary>m</summary>\n    public System.Collections.Generic.List<double> Track() => [];", "Place.Track")]
+    [InlineData("/// <summary>m</summary>\n    public System.Threading.Tasks.Task<double> LatitudeAsync() => null!;", "Place.LatitudeAsync")]
+    [InlineData("/// <summary>m</summary>\n    public void Move(params double[] path) { }", "Place.Move")]
+    [InlineData("/// <summary>m</summary>\n    public double? Latitude { get; set; }", "Place.Latitude")]
+    [InlineData("/// <summary>m</summary>\n    protected internal void Move(double latitude) { }", "Place.Move")]
+    [InlineData("/// <summary>m</summary>\n    public const double Pi = 3.14;", "Place.Pi")]
+    [InlineData("/// <summary>m</summary>\n    public event System.Action<double> Moved { add { } remove { } }", "Place.Moved")]
+    [InlineData("/// <summary>m</summary>\n    public delegate void Step(double latitude);", "Place.Step.Invoke")]
+    public async Task A_double_inside_a_tuple_array_generic_delegate_or_event_is_a_bare_double(string member, string named)
+    {
+        var result = await BuildAsync(Api(member), OwnsSurface);
+
+        result.Succeeded.Should().BeFalse();
+        result.Output.Should().Contain("bare double").And.Contain(named);
+    }
+
+    [Fact]
+    public async Task A_double_in_the_public_member_of_a_nested_public_type_or_an_interface_is_found()
+    {
+        var nested = await BuildAsync("""
+            namespace Geo;
+
+            /// <summary>Outer.</summary>
+            public class Outer
+            {
+                /// <summary>Inner.</summary>
+                public class Inner
+                {
+                    /// <summary>m</summary>
+                    public void Move(double latitude) { }
+                }
+            }
+            """, OwnsSurface);
+        var contract = await BuildAsync("""
+            namespace Geo;
+
+            /// <summary>A contract.</summary>
+            public interface IPlace
+            {
+                /// <summary>m</summary>
+                void Move(double latitude);
+            }
+            """, OwnsSurface);
+
+        nested.Succeeded.Should().BeFalse();
+        nested.Output.Should().Contain("Geo.Outer.Inner.Move");
+        contract.Succeeded.Should().BeFalse();
+        contract.Output.Should().Contain("Geo.IPlace.Move");
+    }
+
+    [Fact]
+    public async Task A_record_exposing_a_double_is_found_and_an_allowance_by_its_name_covers_it()
+    {
+        const string record = """
+            namespace Geo;
+
+            /// <summary>A record.</summary>
+            /// <param name="Latitude">Latitude.</param>
+            public record Coordinate(double Latitude);
+            """;
+
+        var refused = await BuildAsync(record, OwnsSurface);
+        var allowed = await BuildAsync(
+            record,
+            OwnsSurface,
+            """<ItemGroup><RinzlerAllowBareDouble Include="Geo.Coordinate" /></ItemGroup>""");
+
+        refused.Succeeded.Should().BeFalse();
+        allowed.Succeeded.Should().BeTrue(allowed.Output);
+    }
+
+    [Fact]
+    public async Task A_generic_type_is_allowed_by_its_name_with_its_arity()
+    {
+        const string box = """
+            namespace Geo;
+
+            /// <summary>A box.</summary>
+            /// <typeparam name="T">Content.</typeparam>
+            public class Box<T>
+            {
+                /// <summary>m</summary>
+                public void Put(double weight) { }
+            }
+            """;
+
+        var allowed = await BuildAsync(
+            box,
+            OwnsSurface,
+            """<ItemGroup><RinzlerAllowBareDouble Include="Geo.Box`1" /></ItemGroup>""");
+
+        allowed.Succeeded.Should().BeTrue(allowed.Output);
+    }
+
+    [Theory]
+    [InlineData("system.net.http")]
+    [InlineData("SYSTEM.NET.HTTP")]
+    public async Task A_forbidden_reference_is_matched_without_regard_to_case(string spelled)
+    {
+        var result = await BuildAsync(
+            UsesHttp,
+            "",
+            $"""<ItemGroup><RinzlerForbiddenDependency Include="{spelled}" /></ItemGroup>""");
+
+        result.Succeeded.Should().BeFalse();
+        result.Output.Should().Contain("references System.Net.Http");
+    }
+
+    [Theory]
     [InlineData("internal void Move(double latitude) { }")]
     [InlineData("private double _latitude;")]
     [InlineData("/// <summary>m</summary>\n    public void Move(float latitude) { }")]
