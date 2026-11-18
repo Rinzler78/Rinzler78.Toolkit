@@ -48,6 +48,13 @@
     <RinzlerModernTargetFrameworks>net8.0;net9.0;net10.0</RinzlerModernTargetFrameworks>
   </PropertyGroup>
 
+  <!-- Costly optimisations (ahead-of-time compilation, LLVM) are on in Release unless a
+       build turns them off: a feature-branch pull request does, and the promotion
+       pull request, the nightly job and the release do not. -->
+  <PropertyGroup>
+    <RinzlerCostlyOptimisations Condition="'$(RinzlerCostlyOptimisations)' == ''">true</RinzlerCostlyOptimisations>
+  </PropertyGroup>
+
   <!-- Per-project contracts. Every project declares its own; these are the values
        for a project that declares nothing. -->
   <PropertyGroup>
