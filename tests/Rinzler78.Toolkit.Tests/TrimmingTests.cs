@@ -291,6 +291,15 @@ public sealed class TrimmingTests : IDisposable
     }
 
     [Fact]
+    public void A_readme_with_windows_line_endings_is_checked_as_it_stands()
+    {
+        Library("Alpha", marked: 1000, unmarked: 5000);
+        Readme(Block("| Alpha | 1000 | 5000 | 101000 | 105000 |").Replace("\n", "\r\n", StringComparison.Ordinal));
+
+        _repository.Script("trimming.sh", "--check").Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
     public void A_readme_carrying_two_blocks_is_left_with_one()
     {
         Library("Alpha");
