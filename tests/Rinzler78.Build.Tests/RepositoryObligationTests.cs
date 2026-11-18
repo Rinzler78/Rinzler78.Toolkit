@@ -55,6 +55,19 @@ public class RepositoryObligationTests
         accepted.Succeeded.Should().BeTrue(accepted.Output);
     }
 
+    [Theory]
+    [InlineData("a ~Q~ b", "a ' b")]
+    [InlineData("a ' b", "a ~Q~ b")]
+    public async Task A_quote_is_not_confused_with_text_that_looks_like_a_placeholder(string readme, string fragment)
+    {
+        using var consumer = new ScratchConsumer(
+            "<IsPackable>true</IsPackable>",
+            $"""<ItemGroup><RinzlerRequiredReadmeFragment Include="{fragment}" /></ItemGroup>""");
+        consumer.Write("README.md", $"# Consumer\n{readme}\n");
+
+        (await consumer.BuildAsync()).Succeeded.Should().BeFalse();
+    }
+
     [Fact]
     public async Task A_readme_carrying_every_fragment_is_accepted()
     {
