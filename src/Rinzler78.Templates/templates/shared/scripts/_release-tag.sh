@@ -38,7 +38,7 @@ git -C "$REPO_ROOT" fetch --quiet --force --no-tags origin "refs/tags/$tag:refs/
 
 commit=$(git -C "$REPO_ROOT" rev-parse "refs/tags/$tag^{commit}")
 git -C "$REPO_ROOT" merge-base --is-ancestor "$commit" origin/master ||
-  fail "'$tag' points at a commit origin/master does not contain: promote it through a pull request first"
+  fail "'$tag' points at a commit that origin/master does not contain: promote it through a pull request first"
 
 object=$(git -C "$REPO_ROOT" rev-parse "refs/tags/$tag")
 verification=$(gh api "repos/${GITHUB_REPOSITORY:?}/git/tags/$object" --jq '.verification')

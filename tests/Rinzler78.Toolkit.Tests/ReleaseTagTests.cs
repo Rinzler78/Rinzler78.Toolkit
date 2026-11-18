@@ -135,7 +135,7 @@ public sealed class ReleaseTagTests : IDisposable
         var result = _repository.Script("_release-tag.sh", "v1.2.3");
 
         result.Succeeded.Should().BeFalse();
-        result.Error.Should().Contain("'v1.2.3' points at a commit origin/master does not contain");
+        result.Error.Should().Contain("'v1.2.3' points at a commit that origin/master does not contain");
     }
 
     [Fact]

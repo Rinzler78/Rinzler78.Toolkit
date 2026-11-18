@@ -11,6 +11,9 @@
 #   policy matches the workflow's file name and this environment, never the ref, and
 #   GitHub silently creates an unprotected environment the first time a job names one.
 # - develop takes squashed pull requests, with a linear, signed history.
+# - Copilot reviews every push to a pull request into either branch, so that the review
+#   never depends on someone remembering to request it: WORKFLOW.md's review loop ends
+#   only when it finds nothing.
 # - master takes merge commits only: a promotion keeps develop's history, so the next
 #   promotion shows only what is new. Signed, but not linear, by construction.
 # - Tags `v*` can be neither moved nor deleted: nuget.org never replaces a version, so a
@@ -25,6 +28,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
 repo=${1:?usage: _provision-forge.sh <owner>/<repository>}
 readonly CHECKS='[{"context":"verify","integration_id":15368},{"context":"lint","integration_id":15368}]'
+# master also requires promotion.yml's check, which runs from master's own copy of the
+# workflow, so that a pull request cannot rewrite the gate it is judged by.
+readonly MASTER_CHECKS='[{"context":"verify","integration_id":15368},{"context":"lint","integration_id":15368},{"context":"promotion-source","integration_id":15368}]'
 
 run gh api -X PUT "repos/$repo/actions/permissions/workflow" \
   -f default_workflow_permissions=read -F can_approve_pull_request_reviews=false >/dev/null
@@ -43,9 +49,9 @@ if ! jq -e '.branch_policies[] | select(.name == "v*" and .type == "tag")' <<<"$
 fi
 
 branch_ruleset() {
-  local branch=$1 method=$2 linear=$3
+  local branch=$1 method=$2 linear=$3 checks=$4
   jq -nc --arg branch "$branch" --arg method "$method" --argjson linear "$linear" \
-    --argjson checks "$CHECKS" '{
+    --argjson checks "$checks" '{
       name: $branch, target: "branch", enforcement: "active", bypass_actors: [],
       conditions: {ref_name: {include: ["refs/heads/\($branch)"], exclude: []}},
       rules: ([{type: "deletion"}, {type: "non_fast_forward"}, {type: "required_signatures"}]
@@ -55,7 +61,9 @@ branch_ruleset() {
               require_code_owner_review: false, require_last_push_approval: false,
               required_review_thread_resolution: false, allowed_merge_methods: [$method]}},
            {type: "required_status_checks", parameters: {
-              strict_required_status_checks_policy: false, required_status_checks: $checks}}])
+              strict_required_status_checks_policy: false, required_status_checks: $checks}},
+           {type: "copilot_code_review", parameters: {
+              review_on_push: true, review_draft_pull_requests: true}}])
     }'
 }
 
@@ -92,8 +100,8 @@ apply() {
   fi
 }
 
-apply "$(branch_ruleset develop squash true)"
-apply "$(branch_ruleset master merge false)"
+apply "$(branch_ruleset develop squash true "$CHECKS")"
+apply "$(branch_ruleset master merge false "$MASTER_CHECKS")"
 apply "$(tag_immutability_ruleset)"
 apply "$(tag_creation_ruleset)"
 

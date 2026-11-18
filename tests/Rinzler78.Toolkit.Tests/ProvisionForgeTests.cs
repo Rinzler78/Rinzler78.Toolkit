@@ -79,6 +79,15 @@ public sealed class ProvisionForgeTests : IDisposable
     }
 
     [Fact]
+    public void Master_requires_the_promotion_check_and_develop_does_not()
+    {
+        var calls = Provision();
+
+        RulesetNamed(calls, "master").Should().Contain("{\"context\":\"promotion-source\",\"integration_id\":15368}");
+        RulesetNamed(calls, "develop").Should().NotContain("promotion-source");
+    }
+
+    [Fact]
     public void Master_takes_merge_commits_only_and_no_linear_history_rule()
     {
         var master = RulesetNamed(Provision(), "master");
@@ -87,6 +96,16 @@ public sealed class ProvisionForgeTests : IDisposable
             .And.Contain("\"allowed_merge_methods\":[\"merge\"]")
             .And.Contain("\"required_signatures\"")
             .And.NotContain("required_linear_history");
+    }
+
+    [Theory]
+    [InlineData("develop")]
+    [InlineData("master")]
+    public void Copilot_reviews_every_push_to_a_pull_request(string branch)
+    {
+        var ruleset = RulesetNamed(Provision(), branch);
+
+        ruleset.Should().Contain("{\"type\":\"copilot_code_review\",\"parameters\":{\"review_on_push\":true,\"review_draft_pull_requests\":true}}");
     }
 
     [Fact]
