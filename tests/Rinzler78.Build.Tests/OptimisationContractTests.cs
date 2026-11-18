@@ -108,7 +108,7 @@ public class OptimisationContractTests
     }
 
     [Fact]
-    public async Task Release_on_blazor_webassembly_compiles_ahead_of_time_and_compresses()
+    public async Task Release_on_blazor_wasm_compiles_ahead_of_time_and_compresses()
     {
         const string blazor = "<UsingMicrosoftNETSdkBlazorWebAssembly>true</UsingMicrosoftNETSdkBlazorWebAssembly>";
 

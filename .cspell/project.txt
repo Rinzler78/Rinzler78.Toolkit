@@ -10,6 +10,8 @@ xharness
 Trimmable
 Aot
 xamarinios
+Mtouch
+proguard
 MSBUILDFAILONDRIVEENUMERATINGWILDCARD
 # Shell tokens in this repository's tests
 esac
