@@ -37,6 +37,7 @@ Every repository in the ecosystem exposes the same verbs at the same place:
     scripts/sync-skills.sh [--no-commit]
     scripts/mutation.sh [--since <revision> [--baseline <file>]]
     scripts/coverage.sh --gate [--since <revision>]
+    scripts/trimming.sh [--write | --check] [--aot]
 
 The repository's own checks are one script each in `scripts/hooks/`, declaring
 `# rinzler-stage:` in their header; `scripts/checks.sh` discovers them, and nothing

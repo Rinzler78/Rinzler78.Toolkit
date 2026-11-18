@@ -1,0 +1,58 @@
+name: trimming
+
+# The trimming gate of a Committed library, on the promotion pull request into master: the
+# costly check, run before any tag can name the commit. It publishes the library's
+# trimming test application trimmed, marked and unmarked, compares the sizes with the
+# README, compiles it ahead of time, and posts the sizes on the pull request. A repository
+# with no Committed library has nothing to measure and the job passes at once. Only the
+# library template carries this file: a binding is never marked for trimming.
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: trimming-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trimming:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      # Ahead-of-time compilation links natively: the compiler and the zlib headers are
+      # the runner image's to provide, and an image that drops them must fail here.
+      - name: Native toolchain
+        run: sudo apt-get update && sudo apt-get install --yes clang zlib1g-dev
+
+      - run: dotnet restore --locked-mode
+
+      - name: Trimming and ahead-of-time compilation
+        run: ./scripts/trimming.sh --check --aot
+
+      # The comment is found by its marker and edited, so that a push updates the sizes
+      # instead of adding a second post. It runs on failure too: a regression is exactly
+      # when the sizes are wanted.
+      - name: Post the sizes
+        if: always() && hashFiles('artifacts/trimming/summary.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+        run: |
+          comment=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PULL_REQUEST/comments" --paginate \
+            --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- trimming-summary -->")))][0].id // empty')
+          if [[ -n "$comment" ]]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$comment" \
+              --field body=@artifacts/trimming/summary.md
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$PULL_REQUEST/comments" \
+              --field body=@artifacts/trimming/summary.md
+          fi

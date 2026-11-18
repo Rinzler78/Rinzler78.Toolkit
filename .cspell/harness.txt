@@ -72,3 +72,9 @@ rstart
 subsep
 gsub
 nroots
+blazor
+blockfile
+frobnicate
+getline
+netsdk
+startswith
