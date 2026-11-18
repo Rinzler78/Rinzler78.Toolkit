@@ -40,10 +40,14 @@ jobs:
       - name: Restore, locked
         run: dotnet restore --locked-mode
 
+      # The costly optimisations (ahead-of-time compilation, LLVM) run on the promotion
+      # pull request into master and on master itself, never on a feature branch: the
+      # property is read by Rinzler78.Build, and the release workflow leaves it on.
       - name: Build
         run: ./scripts/build.sh
         env:
           CONFIGURATION: Release
+          RinzlerCostlyOptimisations: ${{ (github.base_ref == 'master' || github.ref == 'refs/heads/master') && 'true' || 'false' }}
 
       - name: Test
         if: github.event_name != 'pull_request'

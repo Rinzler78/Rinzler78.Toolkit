@@ -182,6 +182,14 @@ is a reviewable pull request in the repository that owns it.
 | `RinzlerRequiredDescription` | A fragment every package description must carry. |
 | `RinzlerTrimContract` | `Committed`, `Analyzed` or `OutOfScope`. |
 | `RinzlerCoverageContract` | `Enforced`, `Reduced` or `Exempt`. |
+| `RinzlerCostlyOptimisations` | `true` by default. `false` keeps the costly Release optimisations (ahead-of-time compilation, LLVM) off: the generated continuous integration sets it so on a feature-branch pull request, and leaves it on for the pull request into `master`, `master` itself and the release. |
+
+In Release, `Rinzler78.Build` also enables what the project can enable, under each
+platform's own property names: R8 and profiled ahead-of-time compilation on Android,
+LLVM on iOS, ahead-of-time compilation and compression on Blazor WebAssembly,
+ReadyToRun on a server application with a runtime identifier. Debug is left to the
+SDK, except that a Xamarin.Android debug build deploys assemblies only. A value the
+project sets is kept.
 
 This repository ships no assembly with a public surface, so the gates that
 presuppose one — coverage floors, mutation scores, trimming contracts, API

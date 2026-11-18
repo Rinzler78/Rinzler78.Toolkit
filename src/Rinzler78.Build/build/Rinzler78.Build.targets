@@ -43,6 +43,61 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>
 
+  <!-- Debug serves diagnosis and is left to the SDK defaults, except that a Xamarin.Android
+       debug build deploys assemblies only. The property was removed from .NET for Android
+       in .NET 9, where fast deployment is the default of a Debug build.
+
+       Release enables what the project can enable, each property under the name its
+       platform gives it. The cheap ones (R8, ReadyToRun, compression) are unconditional;
+       the costly ones follow RinzlerCostlyOptimisations. A value the project set is
+       kept. The identifiers are derived from TargetFramework, because the SDK has not
+       derived its own yet when this file is imported, and a Xamarin moniker carries no
+       platform part. -->
+  <PropertyGroup>
+    <_RinzlerFrameworkIdentifier>$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)'))</_RinzlerFrameworkIdentifier>
+    <_RinzlerPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</_RinzlerPlatformIdentifier>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_RinzlerFrameworkIdentifier)' == 'MonoAndroid' AND '$(Configuration)' == 'Debug'">
+    <AndroidFastDeploymentType Condition="'$(AndroidFastDeploymentType)' == ''">Assemblies</AndroidFastDeploymentType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <_RinzlerCostly>true</_RinzlerCostly>
+    <_RinzlerCostly Condition="'$(RinzlerCostlyOptimisations)' == 'false'">false</_RinzlerCostly>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' AND
+                            (('$(_RinzlerFrameworkIdentifier)' == '.NETCoreApp' AND '$(_RinzlerPlatformIdentifier)' == 'Android') OR
+                             '$(_RinzlerFrameworkIdentifier)' == 'MonoAndroid')">
+    <AndroidLinkTool Condition="'$(AndroidLinkTool)' == ''">r8</AndroidLinkTool>
+    <AndroidEnableProfiledAot Condition="'$(AndroidEnableProfiledAot)' == ''">$(_RinzlerCostly)</AndroidEnableProfiledAot>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' AND '$(_RinzlerFrameworkIdentifier)' == '.NETCoreApp' AND '$(_RinzlerPlatformIdentifier)' == 'Android'">
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">$(_RinzlerCostly)</RunAOTCompilation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' AND '$(_RinzlerFrameworkIdentifier)' == 'MonoAndroid'">
+    <AotAssemblies Condition="'$(AotAssemblies)' == ''">$(_RinzlerCostly)</AotAssemblies>
+    <EnableLLVM Condition="'$(EnableLLVM)' == ''">$(_RinzlerCostly)</EnableLLVM>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' AND
+                            (('$(_RinzlerFrameworkIdentifier)' == '.NETCoreApp' AND '$(_RinzlerPlatformIdentifier)' == 'iOS') OR
+                             '$(_RinzlerFrameworkIdentifier)' == 'Xamarin.iOS')">
+    <MtouchUseLlvm Condition="'$(MtouchUseLlvm)' == ''">$(_RinzlerCostly)</MtouchUseLlvm>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' AND '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">$(_RinzlerCostly)</RunAOTCompilation>
+    <BlazorEnableCompression Condition="'$(BlazorEnableCompression)' == ''">true</BlazorEnableCompression>
+  </PropertyGroup>
+
+  <!-- ReadyToRun needs a runtime identifier: without one the property has nothing to
+       compile for. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' AND '$(UsingMicrosoftNETSdkWeb)' == 'true' AND '$(RuntimeIdentifier)' != ''">
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
+  </PropertyGroup>
+
   <Target Name="RinzlerValidateContracts" BeforeTargets="Build">
     <Error Condition="'$(RinzlerTrimContract)' != 'Committed' AND
                       '$(RinzlerTrimContract)' != 'Analyzed' AND
