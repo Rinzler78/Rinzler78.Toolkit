@@ -39,6 +39,23 @@ public class RepositoryObligationTests
     }
 
     [Fact]
+    public async Task A_fragment_with_a_quote_is_searched_not_a_crash()
+    {
+        using var consumer = new ScratchConsumer(
+            "<IsPackable>true</IsPackable>",
+            """<ItemGroup><RinzlerRequiredReadmeFragment Include="HERE's trademark" /></ItemGroup>""");
+        consumer.Write("README.md", "# Consumer\n");
+
+        var refused = await consumer.BuildAsync();
+        consumer.Write("README.md", "# Consumer\nHERE's trademark belongs to its owner.\n");
+        var accepted = await consumer.BuildAsync();
+
+        refused.Succeeded.Should().BeFalse();
+        refused.Output.Should().Contain("README.md must contain: HERE's trademark");
+        accepted.Succeeded.Should().BeTrue(accepted.Output);
+    }
+
+    [Fact]
     public async Task A_readme_carrying_every_fragment_is_accepted()
     {
         using var consumer = new ScratchConsumer(
@@ -59,7 +76,7 @@ public class RepositoryObligationTests
         var result = await consumer.BuildAsync();
 
         result.Succeeded.Should().BeFalse();
-        result.Output.Should().Contain("README.md");
+        result.Output.Should().Contain("README.md is missing");
     }
 
     [Fact]
@@ -140,7 +157,7 @@ public class RepositoryObligationTests
         var result = await consumer.BuildAsync();
 
         result.Succeeded.Should().BeFalse();
-        result.Output.Should().Contain("ADR-0001-wrappers.md");
+        result.Output.Should().Contain("ADR-0001-wrappers.md, which does not exist");
     }
 
     [Fact]
@@ -157,7 +174,7 @@ public class RepositoryObligationTests
     }
 
     [Theory]
-    [InlineData("<IsTestProject>true</IsTestProject>")]
+    [InlineData("<IsPackable>true</IsPackable><IsTestProject>true</IsTestProject>")]
     [InlineData("<IsPackable>false</IsPackable>")]
     public async Task A_project_shipping_nothing_may_be_exempt_without_an_adr(string shipsNothing)
     {

@@ -191,18 +191,23 @@
        README counterpart of the description fragment above: the mechanism lives here, the
        text with the domain that owes it. It binds a project that ships a package, because
        that README is what a consumer reads; a missing README fails like a README without
-       the text. A fragment is one item, so it cannot contain a semicolon. -->
+       the text. A fragment is one item, so it cannot contain a semicolon. A quote is legal in a
+       fragment but not in the expression that searches for it, so both sides are compared
+       with the quote replaced by a token. -->
   <Target Name="RinzlerRequireReadmeFragment" BeforeTargets="Build"
           DependsOnTargets="RinzlerCollectFacts"
           Condition="'@(RinzlerRequiredReadmeFragment)' != '' AND '$(_RinzlerShipsPackage)' == 'true'">
     <PropertyGroup>
       <_RinzlerReadmePath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(RinzlerReadme)'))</_RinzlerReadmePath>
-      <_RinzlerReadmeText Condition="Exists('$(_RinzlerReadmePath)')">$([System.IO.File]::ReadAllText('$(_RinzlerReadmePath)'))</_RinzlerReadmeText>
+      <_RinzlerReadmeText Condition="Exists('$(_RinzlerReadmePath)')">$([System.IO.File]::ReadAllText('$(_RinzlerReadmePath)').Replace("'", '~Q~'))</_RinzlerReadmeText>
     </PropertyGroup>
+    <ItemGroup>
+      <_RinzlerFragment Include="@(RinzlerRequiredReadmeFragment->Replace(&quot;'&quot;, '~Q~'))" />
+    </ItemGroup>
     <Error Condition="!Exists('$(_RinzlerReadmePath)')"
            Text="$(RinzlerReadme) is missing: it must contain @(RinzlerRequiredReadmeFragment, '; ')." />
-    <Error Condition="Exists('$(_RinzlerReadmePath)') AND !$(_RinzlerReadmeText.Contains('%(RinzlerRequiredReadmeFragment.Identity)'))"
-           Text="$(RinzlerReadme) must contain: %(RinzlerRequiredReadmeFragment.Identity)" />
+    <Error Condition="Exists('$(_RinzlerReadmePath)') AND !$(_RinzlerReadmeText.Contains('%(_RinzlerFragment.Identity)'))"
+           Text="$(RinzlerReadme) must contain: $([System.String]::Copy('%(_RinzlerFragment.Identity)').Replace('~Q~', &quot;'&quot;))" />
   </Target>
 
   <!-- No project reference crosses a repository boundary. A repository is the tree under
@@ -210,7 +215,9 @@
        package management is mandatory — so a submodule, which owns its own, is another
        repository even though it sits inside this one's folder. A project outside any
        such tree is foreign too. Where the referencing project has no boundary marker, no
-       policy is declared and nothing is checked. -->
+       policy is declared and nothing is checked. Paths are compared as written, so a
+       reference spelled through a filesystem alias of the project folder (macOS
+       /tmp for /private/tmp) is read as foreign: spell references relative. -->
   <Target Name="RinzlerRefuseForeignProjectReference" BeforeTargets="ResolveProjectReferences"
           Condition="'@(ProjectReference)' != ''">
     <PropertyGroup>

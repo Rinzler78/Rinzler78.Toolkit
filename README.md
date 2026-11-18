@@ -181,7 +181,7 @@ is a reviewable pull request in the repository that owns it.
 | `RinzlerRequiredAnalyzer` | Analysers this project must reference, each with a `Because`. |
 | `RinzlerRequiredDescription` | A fragment every package description must carry. |
 | `RinzlerRequiredReadmeFragment` | Items: text the `README.md` (or `RinzlerReadme`) of a package-shipping project must contain. A fragment cannot contain a semicolon. |
-| `RinzlerCoverageAdr` | The ADR file, relative to the project, that argues a `Reduced` or `Exempt` coverage contract. Required of a project that ships a package; a test project owes none. |
+| `RinzlerCoverageAdr` | The ADR file, relative to the project, that argues a `Reduced` or `Exempt` coverage contract. Required of a project that ships a package: a project shipping none — a test project, a trimming application, a demonstration, anything with `IsPackable` false — owes none. |
 | `RinzlerTrimContract` | `Committed`, `Analyzed` or `OutOfScope`. |
 | `RinzlerCoverageContract` | `Enforced`, `Reduced` or `Exempt`. |
 | `RinzlerCostlyOptimisations` | `true` by default. `false` keeps the costly Release optimisations (ahead-of-time compilation, LLVM) off: the generated continuous integration sets it so on a feature-branch pull request, and leaves it on for the pull request into `master`, `master` itself and the release. It takes effect in the builds that package or publish an application. |
